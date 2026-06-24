@@ -118,5 +118,5 @@ This project is developed for academic purposes as part of [Your Course/Module N
 **My Final Recommendation:**
 
 ```bash
-# Use this for your GitHub repository:
+ Use this for your GitHub repository:
 SmartSpend 
