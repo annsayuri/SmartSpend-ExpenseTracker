@@ -8,7 +8,7 @@ class TransactionModel {
   final double amount;
   final DateTime date;
   final ExpenseCategory category;
-  final TransactionType type; // 👈 ආදායමක්ද වියදමක්ද කියලා වෙන් කරගන්න
+  final TransactionType type;
 
   TransactionModel({
     required this.id,
