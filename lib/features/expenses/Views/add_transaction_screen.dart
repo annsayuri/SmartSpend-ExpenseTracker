@@ -20,9 +20,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Title Input Field
             TextFormField(
               decoration: const InputDecoration(
                 labelText: 'Title',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16.0), // Fields දෙක අතර පරතරය ↕️
+            
+            // Amount Input Field
+            TextFormField(
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Amount',
                 border: OutlineInputBorder(),
               ),
             ),
