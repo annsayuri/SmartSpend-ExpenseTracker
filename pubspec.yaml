@@ -14,7 +14,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   sqflite: ^2.4.0
   path: ^1.9.0
-  intl: ^0.19.0 # 👈 ඩේට් ෆෝමැට් කරන්න ඕන වෙන පැකේජ් එක මෙතනට දැම්මා!
+  intl: ^0.19.0 # 👈 ඩේට් ෆෝමැට් කරන්න දාපු පැකේජ් එක
+
+  # 🌐 Chrome (Web) එකේ SQLite වැඩ කරන්න මේ පැකේජ් දෙක අනිවාර්යයෙන්ම එකතු කරන්න:
+  sqflite_common_ffi: ^2.3.0
+  sqflite_common_ffi_web: ^0.4.0
 
 dev_dependencies:
   flutter_test:
