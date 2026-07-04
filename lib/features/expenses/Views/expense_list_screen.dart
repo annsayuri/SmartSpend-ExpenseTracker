@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/database/db_helper.dart'; // 👈 DBHelper එක import කළා
 import 'add_transaction_screen.dart';
 
 class ExpenseListScreen extends StatefulWidget {
@@ -9,29 +10,27 @@ class ExpenseListScreen extends StatefulWidget {
 }
 
 class _ExpenseListScreenState extends State<ExpenseListScreen> {
-  // 📊 දත්ත තාවකාලිකව තබා ගන්නා ප්‍රධාන List එක
-  final List<Map<String, dynamic>> _transactions = [
-    {
-      'title': 'Monthly Salary',
-      'date': '30/6/2026',
-      'amount': 85000.00,
-      'type': 'Income'
-    },
-    {
-      'title': 'Rice & Curry',
-      'date': '30/6/2026',
-      'amount': 450.00,
-      'type': 'Expense'
-    },
-    {
-      'title': 'Bus Fare',
-      'date': '30/6/2026',
-      'amount': 120.00,
-      'type': 'Expense'
-    },
-  ];
+  final DBHelper _dbHelper = DBHelper(); // 👈 DBHelper instance එක ගත්තා
+  List<Map<String, dynamic>> _transactions = []; // 📊 ඩේටාබේස් එකෙන් එන ලිස්ට් එක
+  bool _isLoading = true; // ⏳ ඩේටා load වෙනකම් පෙන්වන්න
 
-  // 💰 මුළු බැලන්ස් එක සහ Income/Expense ගණනය කරන Function එක
+  @override
+  void initState() {
+    super.initState();
+    _refreshTransactions(); // 🚀 ඇප් එක open වෙද්දීම ඩේටා load කරනවා
+  }
+
+  // 🔄 ඩේටාබේස් එකෙන් අලුත්ම දත්ත ටික ඇදලා අරන් Screen එක refresh කරන ශ්‍රිතය
+  void _refreshTransactions() async {
+    setState(() => _isLoading = true);
+    final data = await _dbHelper.getAllTransactions();
+    setState(() {
+      _transactions = data;
+      _isLoading = false;
+    });
+  }
+
+  // 💰 Available Balance ගණනය කිරීම
   double get _totalBalance {
     double balance = 0.0;
     for (var tx in _transactions) {
@@ -56,16 +55,15 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         .fold(0.0, (sum, tx) => sum + tx['amount']);
   }
 
-  // ➕ අලුත් ගනුදෙනුවක් ලිස්ට් එකට එකතු කරන ශ්‍රිතය (Function)
-  void _addNewTransaction(String title, double amount, String type) {
-    setState(() {
-      _transactions.add({
-        'title': title,
-        'date': '03/7/2026', // 👈 අද දවස තාවකාලිකව දැම්මා
-        'amount': amount,
-        'type': type,
-      });
+  // ➕ SQFlite ඩේටාබේස් එකට අලුත් දත්තයක් එකතු කිරීම
+  void _addNewTransaction(String title, double amount, String type) async {
+    await _dbHelper.insertTransaction({
+      'title': title,
+      'amount': amount,
+      'type': type,
+      'date': '04/07/2026', // 👈 අද දවස (04 July 2026) නිවැරදිව දැම්මා
     });
+    _refreshTransactions(); // 🔄 එකතු කරපු ගමන් ලිස්ට් එක refresh කරනවා
   }
 
   @override
@@ -76,108 +74,99 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Dynamic Balance Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24.0),
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16.0),
-                ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator()) // ⏳ Load වෙනකොට රවුම කැරකෙනවා
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Available Balance',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 8.0),
-                    Text(
-                      'Rs. ${_totalBalance.toStringAsFixed(2)}', // 👈 ගණනය කළ බැලන්ස් එක පෙන්වයි
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.deepPurple,
+                    // Dynamic Balance Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24.0),
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16.0),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text('Available Balance', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                          const SizedBox(height: 8.0),
+                          Text(
+                            'Rs. ${_totalBalance.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                          ),
+                          const SizedBox(height: 16.0),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.arrow_downward, color: Colors.green),
+                                  const SizedBox(width: 4.0),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Income', style: TextStyle(color: Colors.grey)),
+                                      Text('Rs. ${_totalIncome.toStringAsFixed(2)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  const Icon(Icons.arrow_upward, color: Colors.red),
+                                  const SizedBox(width: 4.0),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Expense', style: TextStyle(color: Colors.grey)),
+                                      Text('Rs. ${_totalExpense.toStringAsFixed(2)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(height: 24.0),
+                    const Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16.0),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.arrow_downward, color: Colors.green),
-                            const SizedBox(width: 4.0),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Income', style: TextStyle(color: Colors.grey)),
-                                Text('Rs. ${_totalIncome.toStringAsFixed(2)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            const Icon(Icons.arrow_upward, color: Colors.red),
-                            const SizedBox(width: 4.0),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Expense', style: TextStyle(color: Colors.grey)),
-                                Text('Rs. ${_totalExpense.toStringAsFixed(2)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    
+                    _transactions.isEmpty
+                        ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text('No transactions found. Add some! 🛍️')))
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _transactions.length,
+                            itemBuilder: (context, index) {
+                              final tx = _transactions[index];
+                              final isIncome = tx['type'] == 'Income';
+                              return _buildTransactionItem(
+                                tx['title'],
+                                tx['date'],
+                                '${isIncome ? '+' : '-'} Rs. ${tx['amount'].toStringAsFixed(2)}',
+                                isIncome ? Colors.green : Colors.red,
+                              );
+                            },
+                          ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24.0),
-              const Text(
-                'Recent Transactions',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16.0),
-              
-              // 🔄 ඩේටා ලිස්ට් එක dynamic ලෙස පෙන්වන කොටස
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _transactions.length,
-                itemBuilder: (context, index) {
-                  final tx = _transactions[index];
-                  final isIncome = tx['type'] == 'Income';
-                  return _buildTransactionItem(
-                    tx['title'],
-                    tx['date'],
-                    '${isIncome ? '+' : '-'} Rs. ${tx['amount'].toStringAsFixed(2)}',
-                    isIncome ? Colors.green : Colors.red,
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      
+            ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         onPressed: () {
-          // 🚀 මෙන්න අපි අලුත් Screen එකට Data එකතු කරන Function එක පාස් කළා!
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => AddTransactionScreen(
-                onAddTransaction: _addNewTransaction, // 👈 Callback එක සම්බන්ධ කළා
+                onAddTransaction: _addNewTransaction,
               ),
             ),
           );
