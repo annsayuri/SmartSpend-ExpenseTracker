@@ -22,11 +22,17 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
   // 🔄 ඩේටාබේස් එකෙන් අලුත්ම දත්ත ටික ඇදලා අරන් Screen එක refresh කරන ශ්‍රිතය
   void _refreshTransactions() async {
-    setState(() => _isLoading = true);
+    // 💡 Infinite Loop එක නැවැත්වීමට මෙතන තිබුණු setState එක අයින් කළා.
+    // මොකද variable එක initialize කරද්දීම _isLoading = true දීලා තියෙන නිසා.
+    
     final data = await _dbHelper.getAllTransactions();
+    
+    // 🛡️ Safety Check: Widget එක තවමත් Screen එකේ තියෙනවා නම් විතරක් State එක වෙනස් කරයි
+    if (!mounted) return;
+
     setState(() {
       _transactions = data;
-      _isLoading = false;
+      _isLoading = false; // ⏳ Loading එක නවත්වනවා
     });
   }
 
@@ -61,8 +67,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       'title': title,
       'amount': amount,
       'type': type,
-      'date': '04/07/2026', // 👈 අද දවස (04 July 2026) නිවැරදිව දැම්මා
+      'date': '04/07/2026', // 👈 අද දවස නිවැරදිව දැම්මා
     });
+    
+    // 🔄 අලුත් දත්තයක් දාද්දී ආයෙත් loading පෙන්වන්න ඕන නම් මෙතන setState එක දාන්න පුළුවන්
+    setState(() => _isLoading = true);
     _refreshTransactions(); // 🔄 එකතු කරපු ගමන් ලිස්ට් එක refresh කරනවා
   }
 
