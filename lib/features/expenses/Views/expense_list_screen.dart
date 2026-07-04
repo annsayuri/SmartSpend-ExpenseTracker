@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // 👈 Date එක format කරගන්න intl package එක දාගන්න (pubspec.yaml එකට intl දාන්න)
+import 'package:intl/intl.dart'; // 👈 ඔන්න දැන් මේ import එක වැඩ, මොකද පැකේජ් එක දාලා තියෙන්නේ!
 import '../../../core/database/db_helper.dart'; 
 import 'add_transaction_screen.dart';
 
@@ -21,6 +21,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     _refreshTransactions(); 
   }
 
+  // 🔄 ඩේටාබේස් එකෙන් දත්ත ඇදලා අරන් Screen එක refresh කරන ශ්‍රිතය
   void _refreshTransactions() async {
     final data = await _dbHelper.getAllTransactions();
     
@@ -32,6 +33,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     });
   }
 
+  // 💰 Available Balance ගණනය කිරීම (අර මැකිලා තිබුණු Loop එක මෙන්න!)
   double get _totalBalance {
     double balance = 0.0;
     for (var tx in _transactions) {
@@ -56,10 +58,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         .fold(0.0, (sum, tx) => sum + tx['amount']);
   }
 
-  // 💡 _addNewTransaction එක මෙතනින් අයින් කරලා AddTransactionScreen එක ඇතුළෙන්ම DB එකට සේව් කරන එක වඩාත් සුදුසුයි.
-  // හැබැයි ඔයාට මෙතනම ඕන නම්, Date එක dynamic කලේ මෙහෙමයි:
+  // ➕ SQFlite ඩේටාබේස් එකට අලුත් දත්තයක් එකතු කිරීම
   void _addNewTransaction(String title, double amount, String type) async {
-    // 📅 හැමදාටම හරියන විදිහට dynamic date එකක් ගත්තා
+    // 📅 අද දවස හැමදාටම හරියන විදිහට dynamic date එකක් ගත්තා
     String currentDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
     await _dbHelper.insertTransaction({
@@ -69,7 +70,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       'date': currentDate, 
     });
     
-    if (!mounted) return; // 🛡️ Safety check එකක් දැම්මා
+    if (!mounted) return;
     setState(() => _isLoading = true);
     _refreshTransactions(); 
   }
@@ -84,7 +85,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator()) 
-          : Column( // 💡 SingleChildScrollView එක අයින් කරලා Column + Expanded දැම්මා Performance හොඳ වෙන්න
+          : Column( // 💡 Performance හොඳ වෙන්න Column + Expanded දැම්මා
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -174,7 +175,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         onPressed: () async {
-          // 💡 Navigation එක await කිරීමෙන්, අනිත් Screen එක close වෙලා මෙහාට ආපු ගමන් data refresh කරගන්න පුළුවන්!
+          // 💡 Screen එක close වෙලා ආපු ගමන් data auto refresh වෙනවා
           await Navigator.push(
             context,
             MaterialPageRoute(
@@ -183,8 +184,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               ),
             ),
           );
-          
-          // ආපහු මේ screen එකට ආවම data ටික auto refresh වෙනවා!
           _refreshTransactions();
         },
         child: const Icon(Icons.add),
