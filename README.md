@@ -107,7 +107,12 @@ CREATE TABLE budget(
 
 ### 👨‍💻 Author
 
-Sayuri S. kotikawaththa
+- **Name:** Ann Sayuri S. Kotikawaththa
+- **E-mail:** **[annsayu12@gmail.com](mailto:annsayu12@gmail.com)**
+- **Course:** Mobile Application Development
+- **Year:** 2nd Year 2nd Semester
+- **University:** BCI Campus, Negombo, Sri Lanka.
+
 
 ---
 
