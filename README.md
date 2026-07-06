@@ -107,8 +107,10 @@ CREATE TABLE budget(
 
 ### 👨‍💻 Author
 
-[Your Name]
-[Your Student ID]
+Sayuri S. kotikawaththa
+
+---
+
 📄 License
 
 This project is developed for academic purposes as part of [Your Course/Module Name].
