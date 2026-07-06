@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // 👈 Chrome (Web) ද කියලා බලන්න මේක ඕනේ!
 
 class DBHelper {
   // 🔒 Singleton Pattern එක මඟින් එකම instance එකක් පමණක් පවත්වා ගනී
@@ -16,10 +17,18 @@ class DBHelper {
     return _database!;
   }
 
-  // 🚀 Database එක initialising කිරීම සහ දුරකථනයේ path එක සෙවීම
+  // 🚀 Database එක initialising කිරීම (Web සහ Mobile දෙකටම හරියන විදිහට)
   Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'smartspend.db');
+    String path;
+
+    if (kIsWeb) {
+      // 🌐 Chrome (Web) වලදී run වෙද්දී සරලව ෆයිල් එකේ නම විතරක් දෙනවා (getDatabasesPath() null නිසා)
+      path = 'smartspend.db';
+    } else {
+      // 📱 Mobile (Android/iOS) වලදී සාමාන්‍ය විදිහටම path එක ගන්නවා
+      final dbPath = await getDatabasesPath();
+      path = join(dbPath, 'smartspend.db');
+    }
 
     return await openDatabase(
       path,
@@ -66,7 +75,7 @@ class DBHelper {
     );
   }
 
-  // ❌ DELETE (D) - දත්තයක් මකා දැමීම
+  // ❌ DELETE (D) - දත්තයක් mka දැමීම
   Future<int> deleteTransaction(int id) async {
     final db = await database;
     return await db.delete(
