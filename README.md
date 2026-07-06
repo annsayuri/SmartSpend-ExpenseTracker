@@ -118,7 +118,7 @@ CREATE TABLE budget(
 
 📄 License
 
-This project is developed for academic purposes as part of [Your Course/Module Name].
+This project is licensed under the MIT License.
 
 ---
 
