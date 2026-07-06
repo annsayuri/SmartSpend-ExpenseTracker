@@ -22,7 +22,7 @@ class DBHelper {
     String path;
 
     if (kIsWeb) {
-      // 🌐 Chrome (Web) වලදී run වෙද්දී සරලව ෆයිල් එකේ නම විතරක් දෙනවා (getDatabasesPath() null නිසා)
+      // 🌐 Chrome (Web) වලදී run වෙද්දී සරලව ෆයිල් එකේ නම විතරක් දෙනවා
       path = 'smartspend.db';
     } else {
       // 📱 Mobile (Android/iOS) වලදී සාමාන්‍ය විදිහටම path එක ගන්නවා
@@ -30,10 +30,13 @@ class DBHelper {
       path = join(dbPath, 'smartspend.db');
     }
 
-    return await openDatabase(
+    // ✅ මෙන්න මෙතන තමයි වෙනස් කළේ! openDatabase වෙනුවට databaseFactory.openDatabase පාවිච්චි කරනවා.
+    return await databaseFactory.openDatabase(
       path,
-      version: 1,
-      onCreate: _onCreate,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: _onCreate,
+      ),
     );
   }
 
@@ -75,7 +78,7 @@ class DBHelper {
     );
   }
 
-  // ❌ DELETE (D) - දත්තයක් mka දැමීම
+  // ❌ DELETE (D) - දත්තයක් මකා දැමීම
   Future<int> deleteTransaction(int id) async {
     final db = await database;
     return await db.delete(
