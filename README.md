@@ -125,5 +125,4 @@ This project is licensed under the MIT License.
 **My Final Recommendation:**
 
 ```bash
- Use this for your GitHub repository:
-SmartSpend 
+Use this for your GitHub repository: SmartSpend 
