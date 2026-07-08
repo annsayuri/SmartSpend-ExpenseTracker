@@ -19,6 +19,7 @@ dependencies:
   # 🌐 Chrome (Web) එකේ SQLite වැඩ කරන්න මේ පැකේජ් දෙක අනිවාර්යයෙන්ම එකතු කරන්න:
   sqflite_common_ffi: ^2.3.0
   sqflite_common_ffi_web: ^0.4.0
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:
