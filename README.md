@@ -65,6 +65,10 @@ flutter pub get
 flutter run
 ```
 
+## Packages
+
+- ``` flutter pub add fl_chart ```
+
 ### 📊 Database Schema
 
 ```sql
