@@ -178,20 +178,39 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   }
 
   Widget _buildBalanceCard() {
+    final isNegative = _totalBalance < 0; // 🛑 Balance එක 0ට අඩුද බලනවා
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-      color: Colors.deepPurple.shade50.withOpacity(0.6),
+      // 🎨 Minus නම් Soft Rose/Red පාටක් ගන්නවා, නැත්නම් පරණ Purple එකමයි
+      color: isNegative 
+          ? Colors.red.shade50.withOpacity(0.8) 
+          : Colors.deepPurple.shade50.withOpacity(0.6),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text('AVAILABLE BALANCE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 1.2)),
+            Text(
+              isNegative ? 'OVERDRAFT / DEBT' : 'AVAILABLE BALANCE', 
+              style: TextStyle(
+                fontSize: 12, 
+                fontWeight: FontWeight.bold, 
+                color: isNegative ? Colors.red.shade900 : Colors.blueGrey, 
+                letterSpacing: 1.2
+              ),
+            ),
             const SizedBox(height: 8.0),
             Text(
-              'Rs. ${_totalBalance.toStringAsFixed(2)}',
-              style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.deepPurple.shade800),
+              isNegative 
+                  ? '-Rs. ${_totalBalance.abs().toStringAsFixed(2)}' // 🛠️ -Rs. 125938.00 විදිහට ලස්සන කළා
+                  : 'Rs. ${_totalBalance.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: 34, 
+                fontWeight: FontWeight.w900, 
+                color: isNegative ? Colors.red.shade800 : Colors.deepPurple.shade800
+              ),
             ),
             const SizedBox(height: 20.0),
             const Divider(color: Colors.black12), 
@@ -208,7 +227,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         ),
       ),
     );
-  }
+  } 
 
   Widget _buildBalanceStat(IconData icon, Color color, String label, double amount) {
     return Row(
