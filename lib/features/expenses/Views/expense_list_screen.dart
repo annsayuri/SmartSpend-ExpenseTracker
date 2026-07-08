@@ -398,8 +398,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         tx['title'],
                         tx['date'],
                         '${isIncome ? '+' : '-'} Rs. ${tx['amount'].toStringAsFixed(2)}',
-                        style['color'],
-                        style['icon'],
+                         isIncome ? Colors.green.shade600 : Colors.red.shade600, // 🛠️ Amount එක Income නම් Green, Expense නම් හැමතිස්සෙම Red වෙනවා!
+                        style['icon'], // Icon එක විතරක් කලින් වගේම dynamic වෙනස් වෙනවා
                       ),
                     );
                   },
