@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // 👈 ඔන්න දැන් මේ import එක වැඩ, මොකද පැකේජ් එක දාලා තියෙන්නේ!
+import 'package:intl/intl.dart'; // 👈 ඔන්න දැන් මේ import එක වැඩ, මොකද පැකේජ් එක දාලา තියෙන්නේ!
 import '../../../core/database/db_helper.dart'; 
 import 'add_transaction_screen.dart';
 
@@ -160,11 +160,44 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                           itemBuilder: (context, index) {
                             final tx = _transactions[index];
                             final isIncome = tx['type'] == 'Income';
-                            return _buildTransactionItem(
-                              tx['title'],
-                              tx['date'],
-                              '${isIncome ? '+' : '-'} Rs. ${tx['amount'].toStringAsFixed(2)}',
-                              isIncome ? Colors.green : Colors.red,
+                            
+                            // 🔥 මෙන්න මෙතන තමයි Swipe to Delete ෆීචර් එක එකතු කළේ!
+                            return Dismissible(
+                              key: Key(tx['id'].toString()), // එක් එක් පේළියටම Unique Key එකක් දෙනවා
+                              direction: DismissDirection.endToStart, // දකුණේ සිට වමට ස්වයිප් කිරීමට
+                              background: Container(
+                                margin: const EdgeInsets.only(bottom: 12.0),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade400, // ස්වයිප් වෙද්දී පිටුපසින් පෙනෙන රතු පාට
+                                  borderRadius: BorderRadius.circular(12.0),
+                                ),
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                                child: const Icon(Icons.delete, color: Colors.white),
+                              ),
+                              onDismissed: (direction) async {
+                                // ❌ Database එකෙන් දත්තය මැකීම
+                                await _dbHelper.deleteTransaction(tx['id']);
+                                
+                                // 🔄 UI එකේ ගණන් හිලව් අප්ඩේට් කිරීමට සැනෙකින් රිෆ්‍රෙෂ් කිරීම
+                                _refreshTransactions();
+
+                                // 💬 පරිශීලකයාට මැකුණු බව කියන්න පොඩි SnackBar එකක්
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('"${tx['title']}" deleted successfully!'),
+                                    backgroundColor: Colors.red.shade400,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              child: _buildTransactionItem(
+                                tx['title'],
+                                tx['date'],
+                                '${isIncome ? '+' : '-'} Rs. ${tx['amount'].toStringAsFixed(2)}',
+                                isIncome ? Colors.green : Colors.red,
+                              ),
                             );
                           },
                         ),
