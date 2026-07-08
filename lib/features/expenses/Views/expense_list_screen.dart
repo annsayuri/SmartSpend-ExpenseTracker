@@ -17,6 +17,10 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   List<Map<String, dynamic>> _transactions = []; 
   bool _isLoading = true; 
 
+  // 🔍 Search සහ Filter වලට අලුතෙන් දාපු Variables
+  String _searchQuery = '';
+  String _selectedFilter = 'All'; // 'All', 'Income', 'Expense'
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +60,29 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         .fold(0.0, (sum, tx) => sum + tx['amount']);
   }
 
+// 🧠 SMART ICON PICKER: Title එක බලලා ඔටෝම Icon එකක් සහ පාටක් තෝරනවා!
+  Map<String, dynamic> _getCategoryStyle(String title, String type) {
+    String lowerTitle = title.toLowerCase();
+    
+    if (type == 'Income') {
+      if (lowerTitle.contains('salary') || lowerTitle.contains('padi')) {
+        return {'icon': Icons.payments_rounded, 'color': Colors.green.shade600};
+      }
+      return {'icon': Icons.add_card_rounded, 'color': Colors.teal.shade600}; // 🛠️ මෙන්න මෙතන Teal කියලා හැදුවා!
+    } else {
+      if (lowerTitle.contains('bus') || lowerTitle.contains('train') || lowerTitle.contains('car') || lowerTitle.contains('service')) {
+        return {'icon': Icons.directions_bus_rounded, 'color': Colors.orange.shade700};
+      }
+      if (lowerTitle.contains('food') || lowerTitle.contains('eat') || lowerTitle.contains('kottu') || lowerTitle.contains('hotel')) {
+        return {'icon': Icons.fastfood_rounded, 'color': Colors.red.shade400};
+      }
+      if (lowerTitle.contains('bill') || lowerTitle.contains('current') || lowerTitle.contains('water') || lowerTitle.contains('recharge')) {
+        return {'icon': Icons.receipt_long_rounded, 'color': Colors.blue.shade600};
+      }
+      return {'icon': Icons.shopping_bag_rounded, 'color': Colors.amber.shade800};
+    }
+  }
+
   void _addNewTransaction(String title, double amount, String type) async {
     String currentDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
     await _dbHelper.insertTransaction({
@@ -73,6 +100,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWeb = screenWidth > 800;
+
+    // ⚙️ Search සහ Filter අනුව ලිස්ට් එක වෙනස් කරනවා
+    final filteredTransactions = _transactions.where((tx) {
+      final matchesSearch = tx['title'].toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesFilter = _selectedFilter == 'All' || tx['type'] == _selectedFilter;
+      return matchesSearch && matchesFilter;
+    }).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA), 
@@ -107,7 +141,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                           const SizedBox(width: 24.0),
                           Expanded(
                             flex: 6,
-                            child: _buildTransactionListSection(),
+                            child: _buildTransactionListSection(filteredTransactions),
                           ),
                         ],
                       )
@@ -117,7 +151,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                           const SizedBox(height: 16.0),
                           _buildPieChartCard(),
                           const SizedBox(height: 20.0),
-                          Expanded(child: _buildTransactionListSection()),
+                          Expanded(child: _buildTransactionListSection(filteredTransactions)),
                         ],
                       ),
               ),
@@ -160,14 +194,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.deepPurple.shade800),
             ),
             const SizedBox(height: 20.0),
-            const Divider(color: Colors.black12), // 🛠️ Fixed Colors.black10 error
+            const Divider(color: Colors.black12), 
             const SizedBox(height: 12.0),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildBalanceStat(Icons.arrow_downward_rounded, Colors.green.shade600, 'Income', _totalIncome), // 🛠️ Fixed Colors.emerald error
-                Container(height: 30, width: 1, color: Colors.black12), // 🛠️ Fixed Colors.black10 error
-                _buildBalanceStat(Icons.arrow_upward_rounded, Colors.orange.shade700, 'Expense', _totalExpense), // 🛠️ Fixed Colors.orangeAccent error
+                _buildBalanceStat(Icons.arrow_downward_rounded, Colors.green.shade600, 'Income', _totalIncome), 
+                Container(height: 30, width: 1, color: Colors.black12), 
+                _buildBalanceStat(Icons.arrow_upward_rounded, Colors.orange.shade700, 'Expense', _totalExpense), 
               ],
             ),
           ],
@@ -230,9 +264,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildChartIndicator(Colors.green.shade600, 'Income'), // 🛠️ Fixed Error
+                          _buildChartIndicator(Colors.green.shade600, 'Income'), 
                           const SizedBox(height: 12.0),
-                          _buildChartIndicator(Colors.orange.shade700, 'Expense'), // 🛠️ Fixed Error
+                          _buildChartIndicator(Colors.orange.shade700, 'Expense'), 
                         ],
                       ),
                     ],
@@ -243,27 +277,73 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  Widget _buildTransactionListSection() {
+  // 📑 UPDATED: RECENT TRANSACTIONS SECTION WITH SEARCH & CHIPS
+  Widget _buildTransactionListSection(List<Map<String, dynamic>> filteredList) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
+        const Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
+        const SizedBox(height: 12.0),
+        
+        // 🔍 1. Modern Search Bar
+        TextField(
+          onChanged: (value) => setState(() => _searchQuery = value),
+          decoration: InputDecoration(
+            hintText: 'Search transactions...',
+            prefixIcon: const Icon(Icons.search, color: Colors.grey),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(color: Color(0xFFE9ECEF)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.0),
+              borderSide: const BorderSide(color: Color(0xFFE9ECEF)),
+            ),
+          ),
         ),
-        const SizedBox(height: 8.0),
+        const SizedBox(height: 12.0),
+
+        // 🏷️ 2. Filter Chips (All, Income, Expense)
+        Row(
+          children: ['All', 'Income', 'Expense'].map((filterType) {
+            final isSelected = _selectedFilter == filterType;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: ChoiceChip(
+                label: Text(filterType),
+                selected: isSelected,
+                selectedColor: Colors.deepPurple.shade100,
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.deepPurple.shade800 : Colors.black87,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+                onSelected: (bool selected) {
+                  if (selected) {
+                    setState(() => _selectedFilter = filterType);
+                  }
+                },
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12.0),
+
+        // 🛍️ 3. Dynamic List View
         Expanded(
-          child: _transactions.isEmpty
-              ? const Card(
-                  elevation: 0,
-                  child: Center(child: Text('No transactions found. Add some! 🛍️', style: TextStyle(color: Colors.grey))),
-                )
+          child: filteredList.isEmpty
+              ? const Center(child: Text('No matching transactions found! 🔍', style: TextStyle(color: Colors.grey)))
               : ListView.builder(
-                  itemCount: _transactions.length,
+                  itemCount: filteredList.length,
                   itemBuilder: (context, index) {
-                    final tx = _transactions[index];
+                    final tx = filteredList[index];
                     final isIncome = tx['type'] == 'Income';
                     
+                    // Smart Icon Style එක මෙතනින් ගන්නවා
+                    final style = _getCategoryStyle(tx['title'], tx['type']);
+
                     return Dismissible(
                       key: Key(tx['id'].toString()), 
                       direction: DismissDirection.endToStart, 
@@ -295,7 +375,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         tx['title'],
                         tx['date'],
                         '${isIncome ? '+' : '-'} Rs. ${tx['amount'].toStringAsFixed(2)}',
-                        isIncome ? Colors.green.shade600 : Colors.orange.shade700, // 🛠️ Fixed Error
+                        style['color'],
+                        style['icon'],
                       ),
                     );
                   },
@@ -315,7 +396,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     return [
       if (_totalIncome > 0)
         PieChartSectionData(
-          color: Colors.green.shade600, // 🛠️ Fixed Error
+          color: Colors.green.shade600, 
           value: _totalIncome,
           title: '${incomePercent.toStringAsFixed(0)}%',
           radius: 32,
@@ -323,7 +404,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         ),
       if (_totalExpense > 0)
         PieChartSectionData(
-          color: Colors.orange.shade700, // 🛠️ Fixed Error
+          color: Colors.orange.shade700, 
           value: _totalExpense,
           title: '${expensePercent.toStringAsFixed(0)}%',
           radius: 32,
@@ -346,7 +427,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  Widget _buildTransactionItem(String title, String date, String amount, Color color) {
+  Widget _buildTransactionItem(String title, String date, String amount, Color color, IconData icon) {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12.0),
@@ -356,7 +437,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         leading: CircleAvatar(
           radius: 20,
           backgroundColor: color.withOpacity(0.08),
-          child: Icon(color == Colors.green.shade600 ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded, color: color, size: 20),
+          child: Icon(icon, color: color, size: 20), // 🛠️ දැන් dynamic icon එකක් වැටෙන්නේ!
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF212529), fontSize: 15)),
         subtitle: Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
