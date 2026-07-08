@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // 👈 ඔන්න දැන් මේ import එක වැඩ, මොකද පැකේජ් එක දාලา තියෙන්නේ!
+import 'package:intl/intl.dart'; 
+import 'package:fl_chart/fl_chart.dart'; // 📊 ඔන්න ප්‍රස්ථාර අඳින පැකේජ් එක Import කළා!
 import '../../../core/database/db_helper.dart'; 
 import 'add_transaction_screen.dart';
 
@@ -21,19 +22,15 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     _refreshTransactions(); 
   }
 
-  // 🔄 ඩේටාබේස් එකෙන් දත්ත ඇදලා අරන් Screen එක refresh කරන ශ්‍රිතය
   void _refreshTransactions() async {
     final data = await _dbHelper.getAllTransactions();
-    
     if (!mounted) return;
-
     setState(() {
       _transactions = data;
       _isLoading = false; 
     });
   }
 
-  // 💰 Available Balance ගණනය කිරීම (අර මැකිලා තිබුණු Loop එක මෙන්න!)
   double get _totalBalance {
     double balance = 0.0;
     for (var tx in _transactions) {
@@ -58,18 +55,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         .fold(0.0, (sum, tx) => sum + tx['amount']);
   }
 
-  // ➕ SQFlite ඩේටාබේස් එකට අලුත් දත්තයක් එකතු කිරීම
   void _addNewTransaction(String title, double amount, String type) async {
-    // 📅 අද දවස හැමදාටම හරියන විදිහට dynamic date එකක් ගත්තා
     String currentDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
-
     await _dbHelper.insertTransaction({
       'title': title,
       'amount': amount,
       'type': type,
       'date': currentDate, 
     });
-    
     if (!mounted) return;
     setState(() => _isLoading = true);
     _refreshTransactions(); 
@@ -85,51 +78,108 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator()) 
-          : Column( // 💡 Performance හොඳ වෙන්න Column + Expanded දැම්මා
+          : Column( 
               children: [
+                // 📊 1. SECTION: NEW PIE CHART 
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0),
+                  child: Container(
+                    height: 160,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: _transactions.isEmpty
+                        ? const Center(
+                            child: Text(
+                              '📊 Add transactions to visualize analytics',
+                              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                            ),
+                          )
+                        : Row(
+                            children: [
+                              // Chart එක පැත්ත
+                              Expanded(
+                                flex: 2,
+                                child: PieChart(
+                                  PieChartData(
+                                    sectionsSpace: 4,
+                                    centerSpaceRadius: 30,
+                                    sections: _getPieChartSections(),
+                                  ),
+                                ),
+                              ),
+                              // Indicators (විස්තරය) පැත්ත
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildChartIndicator(Colors.green, 'Income'),
+                                    const SizedBox(height: 8.0),
+                                    _buildChartIndicator(Colors.red, 'Expense'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+
+                // 💰 2. SECTION: AVAILABLE BALANCE CARD
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.all(20.0),
                     decoration: BoxDecoration(
                       color: Colors.deepPurple.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(16.0),
                     ),
                     child: Column(
                       children: [
-                        const Text('Available Balance', style: TextStyle(fontSize: 16, color: Colors.grey)),
-                        const SizedBox(height: 8.0),
+                        const Text('Available Balance', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                        const SizedBox(height: 4.0),
                         Text(
                           'Rs. ${_totalBalance.toStringAsFixed(2)}',
-                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepPurple),
                         ),
-                        const SizedBox(height: 16.0),
+                        const SizedBox(height: 12.0),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.arrow_downward, color: Colors.green),
+                                const Icon(Icons.arrow_downward, color: Colors.green, size: 20),
                                 const SizedBox(width: 4.0),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Income', style: TextStyle(color: Colors.grey)),
-                                    Text('Rs. ${_totalIncome.toStringAsFixed(2)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                                    const Text('Income', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                    Text('Rs. ${_totalIncome.toStringAsFixed(2)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 14)),
                                   ],
                                 ),
                               ],
                             ),
                             Row(
                               children: [
-                                const Icon(Icons.arrow_upward, color: Colors.red),
+                                const Icon(Icons.arrow_upward, color: Colors.red, size: 20),
                                 const SizedBox(width: 4.0),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Expense', style: TextStyle(color: Colors.grey)),
-                                    Text('Rs. ${_totalExpense.toStringAsFixed(2)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                    const Text('Expense', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                    Text('Rs. ${_totalExpense.toStringAsFixed(2)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 14)),
                                   ],
                                 ),
                               ],
@@ -148,9 +198,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                     child: Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   ),
                 ),
-                const SizedBox(height: 16.0),
+                const SizedBox(height: 12.0),
                 
-                // 📊 ඩේටා ලිස්ට් එක smooth වෙන්න Expanded එකක් ඇතුළට ListView එක දැම්මා
+                // 📑 3. SECTION: RECENT TRANSACTIONS LIST
                 Expanded(
                   child: _transactions.isEmpty
                       ? const Center(child: Text('No transactions found. Add some! 🛍️'))
@@ -161,14 +211,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                             final tx = _transactions[index];
                             final isIncome = tx['type'] == 'Income';
                             
-                            // 🔥 මෙන්න මෙතන තමයි Swipe to Delete ෆීචර් එක එකතු කළේ!
                             return Dismissible(
-                              key: Key(tx['id'].toString()), // එක් එක් පේළියටම Unique Key එකක් දෙනවා
-                              direction: DismissDirection.endToStart, // දකුණේ සිට වමට ස්වයිප් කිරීමට
+                              key: Key(tx['id'].toString()), 
+                              direction: DismissDirection.endToStart, 
                               background: Container(
                                 margin: const EdgeInsets.only(bottom: 12.0),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.shade400, // ස්වයිප් වෙද්දී පිටුපසින් පෙනෙන රතු පාට
+                                  color: Colors.red.shade400, 
                                   borderRadius: BorderRadius.circular(12.0),
                                 ),
                                 alignment: Alignment.centerRight,
@@ -176,13 +225,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                                 child: const Icon(Icons.delete, color: Colors.white),
                               ),
                               onDismissed: (direction) async {
-                                // ❌ Database එකෙන් දත්තය මැකීම
                                 await _dbHelper.deleteTransaction(tx['id']);
-                                
-                                // 🔄 UI එකේ ගණන් හිලව් අප්ඩේට් කිරීමට සැනෙකින් රිෆ්‍රෙෂ් කිරීම
                                 _refreshTransactions();
 
-                                // 💬 පරිශීලකයාට මැකුණු බව කියන්න පොඩි SnackBar එකක්
                                 if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -208,7 +253,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         onPressed: () async {
-          // 💡 Screen එක close වෙලා ආපු ගමන් data auto refresh වෙනවා
           await Navigator.push(
             context,
             MaterialPageRoute(
@@ -221,6 +265,49 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         },
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  // 🥧 Pie Chart එකට දත්ත සකස් කරන Helper ශ්‍රිතය
+  List<PieChartSectionData> _getPieChartSections() {
+    final double total = _totalIncome + _totalExpense;
+    if (total == 0) return [];
+
+    final double incomePercent = (_totalIncome / total) * 100;
+    final double expensePercent = (_totalExpense / total) * 100;
+
+    return [
+      if (_totalIncome > 0)
+        PieChartSectionData(
+          color: Colors.green.shade400,
+          value: _totalIncome,
+          title: '${incomePercent.toStringAsFixed(0)}%',
+          radius: 40,
+          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      if (_totalExpense > 0)
+        PieChartSectionData(
+          color: Colors.red.shade400,
+          value: _totalExpense,
+          title: '${expensePercent.toStringAsFixed(0)}%',
+          radius: 40,
+          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+    ];
+  }
+
+  // 🟢🔴 Chart එකේ පාට සහ විස්තර පෙන්වන කුඩා Widget එක
+  Widget _buildChartIndicator(Color color, String text) {
+    return Row(
+      children: [
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+        ),
+        const SizedBox(width: 8),
+        Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+      ],
     );
   }
 
