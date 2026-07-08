@@ -61,16 +61,20 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   }
 
 // 🧠 SMART ICON PICKER: Title එක බලලා ඔටෝම Icon එකක් සහ පාටක් තෝරනවා!
-  Map<String, dynamic> _getCategoryStyle(String title, String type) {
+ Map<String, dynamic> _getCategoryStyle(String title, String type) {
     String lowerTitle = title.toLowerCase();
     
     if (type == 'Income') {
       if (lowerTitle.contains('salary') || lowerTitle.contains('padi')) {
         return {'icon': Icons.payments_rounded, 'color': Colors.green.shade600};
       }
-      return {'icon': Icons.add_card_rounded, 'color': Colors.teal.shade600}; // 🛠️ මෙන්න මෙතන Teal කියලා හැදුවා!
+      return {'icon': Icons.add_card_rounded, 'color': Colors.teal.shade600};
     } else {
-      if (lowerTitle.contains('bus') || lowerTitle.contains('train') || lowerTitle.contains('car') || lowerTitle.contains('service')) {
+      // 🏥 NEW: Medical & Health Category
+      if (lowerTitle.contains('medicine') || lowerTitle.contains('chair') || lowerTitle.contains('doctor') || lowerTitle.contains('hospital') || lowerTitle.contains('clinc')) {
+        return {'icon': Icons.medical_services_rounded, 'color': Colors.teal.shade700};
+      }
+      if (lowerTitle.contains('bus') || lowerTitle.contains('train') || lowerTitle.contains('car') || lowerTitle.contains('service') || lowerTitle.contains('insuarance')) {
         return {'icon': Icons.directions_bus_rounded, 'color': Colors.orange.shade700};
       }
       if (lowerTitle.contains('food') || lowerTitle.contains('eat') || lowerTitle.contains('kottu') || lowerTitle.contains('hotel')) {
