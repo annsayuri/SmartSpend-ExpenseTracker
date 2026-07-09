@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; 
-import 'package:fl_chart/fl_chart.dart'; 
+import 'package:fl_chart/fl_chart.dart';
+import 'analytics_screen.dart'; 
 
 import '../../../core/database/db_helper.dart'; 
 import 'add_transaction_screen.dart';
@@ -254,7 +255,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   }
 
   Widget _buildPieChartCard() {
-    return Card(
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
+      );
+    },
+    child: Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0), side: const BorderSide(color: Color(0xFFE9ECEF))),
       color: Colors.white,
