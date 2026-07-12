@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; 
 import 'package:fl_chart/fl_chart.dart';
-import 'analytics_screen.dart'; 
+import '../../analytics_screen.dart';
 
 import '../../../core/database/db_helper.dart'; 
 import 'add_transaction_screen.dart';
