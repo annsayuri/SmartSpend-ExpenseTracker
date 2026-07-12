@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; 
 import 'package:fl_chart/fl_chart.dart';
-import 'package:smartspend_expensetracker/expense/analytics_screen.dart' show AnalyticsScreen;
 import '../../analytics_screen.dart';
-
 import '../../../core/database/db_helper.dart'; 
 import 'add_transaction_screen.dart';
 
