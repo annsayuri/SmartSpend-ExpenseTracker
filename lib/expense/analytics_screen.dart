@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../core/database/db_helper.dart'; // 🛠️ ඔයාගේ DBHelper path එක හරියට බලන්න
+import '../../../core/database/db_helper.dart'; // 🛠️ DBHelper path eka verify karaganna
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -13,7 +13,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   final DBHelper _dbHelper = DBHelper();
   List<Map<String, dynamic>> _transactions = [];
   bool _isLoading = true;
-  String _selectedPeriod = 'Weekly'; // 'Weekly' හෝ 'Monthly'
+  String _selectedPeriod = 'Weekly'; // 'Weekly' ho 'Monthly'
 
   @override
   void initState() {
@@ -30,15 +30,30 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     });
   }
 
-  // 🧮 Category අනුව වියදම් එකතු කරලා ප්‍රතිශතය හදනවා
+  // 🧮 Category anuwa wiyadam ekathu karala map ekak hadagannawa
   Map<String, double> _getCategoryExpenses() {
-    Map<String, double> categoryMap = {};
+    // Categories default reset ekak ekka thiyagannawa dynamic adu paadu novenna
+    Map<String, double> categoryMap = {
+      'Food': 0.0,
+      'Transport': 0.0,
+      'Medical': 0.0,
+      'Bills': 0.0,
+      'Other': 0.0,
+    };
+
     for (var tx in _transactions) {
       if (tx['type'] == 'Expense') {
         String title = tx['title'].toString().toLowerCase();
+        double amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
         String category = 'Other';
         
-        if (title.contains('bus') || title.contains('car') || title.contains('train') || title.contains('service') || title.contains('insuarance')) {
+        // 🔍 Spelling mistakes (insuarance/insurance) okkoma cover wana lesa
+        if (title.contains('bus') || 
+            title.contains('car') || 
+            title.contains('train') || 
+            title.contains('service') || 
+            title.contains('insuarance') || 
+            title.contains('insurance')) {
           category = 'Transport';
         } else if (title.contains('food') || title.contains('eat') || title.contains('kottu')) {
           category = 'Food';
@@ -48,7 +63,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           category = 'Bills';
         }
 
-        categoryMap[category] = (categoryMap[category] ?? 0) + tx['amount'];
+        categoryMap[category] = (categoryMap[category] ?? 0.0) + amount;
       }
     }
     return categoryMap;
@@ -105,7 +120,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // 📈 1. THE BAR CHART CARD (අලුත්ම සුපිරි ප්‍රස්තාරය)
+                      // 📈 1. THE BAR CHART CARD
                       Card(
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -142,7 +157,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                               case 1: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Transport', style: style));
                                               case 2: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Medical', style: style));
                                               case 3: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Bills', style: style));
-                                              default: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Other', style: style));
+                                              case 4: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Other', style: style));
+                                              default: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('', style: style));
                                             }
                                           },
                                         ),
@@ -177,6 +193,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       const SizedBox(height: 12),
                       ...categoryExpenses.entries.map((entry) {
                         final percent = totalExpense > 0 ? (entry.value / totalExpense) * 100 : 0.0;
+                        // 0 ta wada wadi wiyadam thiyena ewath, wiyadam zero nam okkoma categories methana pennanawa
+                        if (entry.value == 0 && totalExpense > 0) return const SizedBox.shrink();
+
                         return Card(
                           elevation: 0,
                           margin: const EdgeInsets.only(bottom: 10),
