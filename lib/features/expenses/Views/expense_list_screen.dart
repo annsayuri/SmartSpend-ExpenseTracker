@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; 
 import 'package:fl_chart/fl_chart.dart';
+import 'package:smartspend_expensetracker/expense/analytics_screen.dart' show AnalyticsScreen;
 import '../../analytics_screen.dart';
 
 import '../../../core/database/db_helper.dart'; 
@@ -278,19 +279,17 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        SizedBox(
-                          height: 130,
-                          width: 130,
-                          child: PieChart(
-                            PieChart(
-                              PieChartData(
-                                sectionsSpace: 5,
-                                centerSpaceRadius: 35,
-                                sections: _getPieChartSections(),
-                              ),
-                            ),
-                          ),
-                        ),
+                       SizedBox(
+                       height: 130,
+                       width: 130,
+                       child: PieChart( 
+                         PieChartData(
+                           sectionsSpace: 5,
+                           centerSpaceRadius: 35,
+                           sections: _getPieChartSections(),
+                         ),
+                       ),
+                     ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
