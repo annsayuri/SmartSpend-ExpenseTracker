@@ -18,7 +18,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   List<Map<String, dynamic>> _transactions = []; 
   bool _isLoading = true; 
 
-  // 🔍 Search සහ Filter වලට අලුතෙන් දාපු Variables
   String _searchQuery = '';
   String _selectedFilter = 'All'; // 'All', 'Income', 'Expense'
 
@@ -61,8 +60,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         .fold(0.0, (sum, tx) => sum + tx['amount']);
   }
 
-// 🧠 SMART ICON PICKER: Title එක බලලා ඔටෝම Icon එකක් සහ පාටක් තෝරනවා!
- Map<String, dynamic> _getCategoryStyle(String title, String type) {
+  // 🧠 SMART ICON PICKER: පරණ බග් ඔක්කොම ස්ථිරවම පිරිසිදු කරලා හැදුවා!
+  Map<String, dynamic> _getCategoryStyle(String title, String type) {
     String lowerTitle = title.toLowerCase();
     
     if (type == 'Income') {
@@ -71,11 +70,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       }
       return {'icon': Icons.add_card_rounded, 'color': Colors.teal.shade600};
     } else {
-      // 🏥 NEW: Medical & Health Category
-      if (lowerTitle.contains('medicine') || lowerTitle.contains('chair') || lowerTitle.contains('doctor') || lowerTitle.contains('hospital') || lowerTitle.contains('clinc')) {
+      // 🏥 Fixed Typos: clinic, care, insurance
+      if (lowerTitle.contains('medicine') || lowerTitle.contains('care') || lowerTitle.contains('doctor') || lowerTitle.contains('hospital') || lowerTitle.contains('clinic')) {
         return {'icon': Icons.medical_services_rounded, 'color': Colors.teal.shade700};
       }
-      if (lowerTitle.contains('bus') || lowerTitle.contains('train') || lowerTitle.contains('car') || lowerTitle.contains('service') || lowerTitle.contains('insuarance')) {
+      if (lowerTitle.contains('bus') || lowerTitle.contains('train') || lowerTitle.contains('car') || lowerTitle.contains('service') || lowerTitle.contains('insurance')) {
         return {'icon': Icons.directions_bus_rounded, 'color': Colors.orange.shade700};
       }
       if (lowerTitle.contains('food') || lowerTitle.contains('eat') || lowerTitle.contains('kottu') || lowerTitle.contains('hotel')) {
@@ -106,7 +105,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWeb = screenWidth > 800;
 
-    // ⚙️ Search සහ Filter අනුව ලිස්ට් එක වෙනස් කරනවා
     final filteredTransactions = _transactions.where((tx) {
       final matchesSearch = tx['title'].toLowerCase().contains(_searchQuery.toLowerCase());
       final matchesFilter = _selectedFilter == 'All' || tx['type'] == _selectedFilter;
@@ -183,12 +181,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   }
 
   Widget _buildBalanceCard() {
-    final isNegative = _totalBalance < 0; // 🛑 Balance එක 0ට අඩුද බලනවා
+    final isNegative = _totalBalance < 0;
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-      // 🎨 Minus නම් Soft Rose/Red පාටක් ගන්නවා, නැත්නම් පරණ Purple එකමයි
       color: isNegative 
           ? Colors.red.shade50.withOpacity(0.8) 
           : Colors.deepPurple.shade50.withOpacity(0.6),
@@ -209,7 +206,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             const SizedBox(height: 8.0),
             Text(
               isNegative 
-                  ? '-Rs. ${_totalBalance.abs().toStringAsFixed(2)}' // 🛠️ -Rs. 125938.00 විදිහට ලස්සන කළා
+                  ? '-Rs. ${_totalBalance.abs().toStringAsFixed(2)}' 
                   : 'Rs. ${_totalBalance.toStringAsFixed(2)}',
               style: TextStyle(
                 fontSize: 34, 
@@ -255,60 +252,62 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   }
 
   Widget _buildPieChartCard() {
-  return GestureDetector(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
-      );
-    },
-    child: Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0), side: const BorderSide(color: Color(0xFFE9ECEF))),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('ANALYTICS OVERVIEW', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 1.2)),
-            const SizedBox(height: 24.0),
-            _transactions.isEmpty
-                ? const SizedBox(
-                    height: 140,
-                    child: Center(child: Text('📊 Add transactions for analytics', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500))),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      SizedBox(
-                        height: 130,
-                        width: 130,
-                        child: PieChart(
-                          PieChartData(
-                            sectionsSpace: 5,
-                            centerSpaceRadius: 35,
-                            sections: _getPieChartSections(),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
+        );
+      },
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0), side: const BorderSide(color: Color(0xFFE9ECEF))),
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('ANALYTICS OVERVIEW', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 1.2)),
+              const SizedBox(height: 24.0),
+              _transactions.isEmpty
+                  ? const SizedBox(
+                      height: 140,
+                      child: Center(child: Text('📊 Add transactions for analytics', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500))),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        SizedBox(
+                          height: 130,
+                          width: 130,
+                          child: PieChart(
+                            PieChart(
+                              PieChartData(
+                                sectionsSpace: 5,
+                                centerSpaceRadius: 35,
+                                sections: _getPieChartSections(),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildChartIndicator(Colors.green.shade600, 'Income'), 
-                          const SizedBox(height: 12.0),
-                          _buildChartIndicator(Colors.orange.shade700, 'Expense'), 
-                        ],
-                      ),
-                    ],
-                  ),
-          ],
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildChartIndicator(Colors.green.shade600, 'Income'), 
+                            const SizedBox(height: 12.0),
+                            _buildChartIndicator(Colors.orange.shade700, 'Expense'), 
+                          ],
+                        ),
+                      ],
+                    ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // 📑 UPDATED: RECENT TRANSACTIONS SECTION WITH SEARCH & CHIPS
   Widget _buildTransactionListSection(List<Map<String, dynamic>> filteredList) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,7 +315,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         const Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
         const SizedBox(height: 12.0),
         
-        // 🔍 1. Modern Search Bar
         TextField(
           onChanged: (value) => setState(() => _searchQuery = value),
           decoration: InputDecoration(
@@ -337,7 +335,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         ),
         const SizedBox(height: 12.0),
 
-        // 🏷️ 2. Filter Chips (All, Income, Expense)
         Row(
           children: ['All', 'Income', 'Expense'].map((filterType) {
             final isSelected = _selectedFilter == filterType;
@@ -362,7 +359,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         ),
         const SizedBox(height: 12.0),
 
-        // 🛍️ 3. Dynamic List View
         Expanded(
           child: filteredList.isEmpty
               ? const Center(child: Text('No matching transactions found! 🔍', style: TextStyle(color: Colors.grey)))
@@ -372,7 +368,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                     final tx = filteredList[index];
                     final isIncome = tx['type'] == 'Income';
                     
-                    // Smart Icon Style එක මෙතනින් ගන්නවා
+                    // 🎨 Smart Category Style එක මෙතනින් ගන්නවා
                     final style = _getCategoryStyle(tx['title'], tx['type']);
 
                     return Dismissible(
@@ -403,11 +399,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         );
                       },
                       child: _buildTransactionItem(
-                        tx['title'],
-                        tx['date'],
-                        '${isIncome ? '+' : '-'} Rs. ${tx['amount'].toStringAsFixed(2)}',
-                         isIncome ? Colors.green.shade600 : Colors.red.shade600, // 🛠️ Amount එක Income නම් Green, Expense නම් හැමතිස්සෙම Red වෙනවා!
-                        style['icon'], // Icon එක විතරක් කලින් වගේම dynamic වෙනස් වෙනවා
+                        title: tx['title'],
+                        date: tx['date'],
+                        amount: '${isIncome ? '+' : '-'} Rs. ${tx['amount'].toStringAsFixed(2)}',
+                        amountColor: isIncome ? Colors.green.shade600 : Colors.red.shade600, 
+                        iconColor: style['color'], // ✅ දැන් Icon එකට හරියටම Category Color එක යනවා!
+                        icon: style['icon'], 
                       ),
                     );
                   },
@@ -458,7 +455,15 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  Widget _buildTransactionItem(String title, String date, String amount, Color color, IconData icon) {
+  // 🛠️ Named Parameters දාලා මේක සුපිරියටම Clean කළා!
+  Widget _buildTransactionItem({
+    required String title, 
+    required String date, 
+    required String amount, 
+    required Color amountColor, 
+    required Color iconColor, 
+    required IconData icon
+  }) {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12.0),
@@ -467,12 +472,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
         leading: CircleAvatar(
           radius: 20,
-          backgroundColor: color.withOpacity(0.08),
-          child: Icon(icon, color: color, size: 20), // 🛠️ දැන් dynamic icon එකක් වැටෙන්නේ!
+          backgroundColor: iconColor.withOpacity(0.08), // ✅ Category Color එකෙන් ලස්සන වෙනවා
+          child: Icon(icon, color: iconColor, size: 20), // ✅ Icon එකත් ඒ පාටම වෙනවා
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF212529), fontSize: 15)),
         subtitle: Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        trailing: Text(amount, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 15)),
+        trailing: Text(amount, style: TextStyle(color: amountColor, fontWeight: FontWeight.w700, fontSize: 15)), // ✅ ගාණ විතරක් Red/Green වෙනවා
       ),
     );
   }
