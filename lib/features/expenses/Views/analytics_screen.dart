@@ -21,12 +21,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   void initState() {
     super.initState();
-    // 👈 expense_list_screen එකෙන් එවපු Income/Expense අගය මෙතනට ගන්නවා
     _selectedType = widget.initialType; 
     _fetchData();
   }
 
+  // 🎯 NEW: Pie Chart එකෙන් එලියෙන් Type එක මාරු කරලා මේ ස්ක්‍රීන් එකට එවද්දී 
+  // මේකෙන් තමයි අලුත් අගය අරන් මුළු Page එකම Update කරන්නේ!
+  @override
+  void didUpdateWidget(covariant AnalyticsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialType != oldWidget.initialType) {
+      setState(() {
+        _selectedType = widget.initialType;
+      });
+      _fetchData(); // 🔄 Data ටික අලුතින් ෆිල්ටර් කරන්න ගන්නවා
+    }
+  }
+
   void _fetchData() async {
+    setState(() {
+      _isLoading = true;
+    });
     final data = await _dbHelper.getAllTransactions();
     if (!mounted) return;
     setState(() {
@@ -37,38 +52,48 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   // 🧮 Category anuwa filter karala map ekak hadagannawa
   Map<String, double> _getCategoryExpenses() {
-    // 👈 Income හෝ Expense දෙකටම ගැලපෙන පොදු Category ටිකක් දාගනිමු
     Map<String, double> categoryMap = {
       'Food': 0.0,
       'Transport': 0.0,
       'Medical': 0.0,
       'Bills': 0.0,
-      'Salary/Allowance': 0.0, // 👈 Income සඳහා විශේෂයෙන්
+      'Salary/Allowance': 0.0, 
       'Other': 0.0,
     };
 
     for (var tx in _transactions) {
-      // 🎯 FIXED: මෙතන widget.initialType වෙනුවට _selectedType දාන්න ඕනේ!
       if (tx['type'] == _selectedType) { 
-        String title = tx['title'].toString().toLowerCase();
+        // 🔍 Title එක වගේම Category හෝ Description එකත් චෙක් කරනවා ආරක්ෂාවට
+        String title = (tx['title'] ?? '').toString().toLowerCase();
+        String categoryField = (tx['category'] ?? '').toString().toLowerCase();
+        
         double amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
         String category = 'Other';
         
-        // 🔍 Category criteria
-        if (title.contains('bus') || 
-            title.contains('car') || 
-            title.contains('train') || 
-            title.contains('service') || 
-            title.contains('insuarance') || 
-            title.contains('insurance')) {
+        // 🚌 Transport checking (මෙතන title හෝ categoryField දෙකම බලනවා)
+        if (title.contains('bus') || title.contains('car') || title.contains('transport') ||
+            categoryField.contains('bus') || categoryField.contains('car') || categoryField.contains('transport') ||
+            title.contains('train') || title.contains('service')) {
           category = 'Transport';
-        } else if (title.contains('food') || title.contains('eat') || title.contains('kottu')) {
+        } 
+        // 🍔 Food checking
+        else if (title.contains('food') || title.contains('eat') || title.contains('kottu') ||
+                 categoryField.contains('food') || categoryField.contains('eat')) {
           category = 'Food';
-        } else if (title.contains('medicine') || title.contains('doctor') || title.contains('hospital')) {
+        } 
+        // 🏥 Medical checking
+        else if (title.contains('medicine') || title.contains('doctor') || title.contains('hospital') ||
+                 categoryField.contains('medical') || categoryField.contains('medicine')) {
           category = 'Medical';
-        } else if (title.contains('bill') || title.contains('current') || title.contains('water') || title.contains('recharge')) {
+        } 
+        // 💡 Bills checking
+        else if (title.contains('bill') || title.contains('current') || title.contains('water') ||
+                 categoryField.contains('bill')) {
           category = 'Bills';
-        } else if (title.contains('salary') || title.contains('padi') || title.contains('allowance') || title.contains('gift')) {
+        } 
+        // 💵 Salary checking
+        else if (title.contains('salary') || title.contains('padi') || title.contains('allowance') ||
+                 categoryField.contains('salary') || categoryField.contains('income')) {
           category = 'Salary/Allowance';
         }
 
@@ -83,7 +108,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final categoryExpenses = _getCategoryExpenses();
     final totalExpense = categoryExpenses.values.fold(0.0, (sum, item) => sum + item);
 
-    // 🎨 Dynamic colors and text for Income/Expense
     final isExpense = _selectedType == 'Expense';
     final themeColor = isExpense ? Colors.red.shade400 : Colors.green.shade500;
 
@@ -105,12 +129,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 🎛️ Period Selector (Weekly / Monthly)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '$_selectedType Breakdown', // 🎯 FIXED: Dynamic text
+                            '$_selectedType Breakdown', 
                             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212529)),
                           ),
                           SegmentedButton<String>(
@@ -133,7 +156,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // 📈 1. THE BAR CHART CARD
                       Card(
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -147,7 +169,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '$_selectedType Overview (Rs.)', // 🎯 FIXED: Dynamic text
+                                '$_selectedType Overview (Rs.)', 
                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey),
                               ),
                               const SizedBox(height: 30),
@@ -200,9 +222,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // 📜 2. CATEGORY WISE DETAILS LIST
                       Text(
-                        'Category Spending ($_selectedType)', // 🎯 FIXED: Dynamic text
+                        'Category Spending ($_selectedType)', 
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212529)),
                       ),
                       const SizedBox(height: 12),
@@ -219,12 +240,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           ),
                           child: ListTile(
                             title: Text(entry.key, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('${percent.toStringAsFixed(1)}% of total ${_selectedType.toLowerCase()}'), // 🎯 FIXED
+                            subtitle: Text('${percent.toStringAsFixed(1)}% of total ${_selectedType.toLowerCase()}'), 
                             trailing: Text(
                               'Rs. ${entry.value.toStringAsFixed(2)}',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold, 
-                                color: themeColor, // 🎯 FIXED: Expense නම් රතු, Income නම් කොළ 🎨
+                                color: themeColor, 
                                 fontSize: 15
                               ),
                             ),
