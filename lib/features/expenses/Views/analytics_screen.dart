@@ -17,10 +17,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<Map<String, dynamic>> _transactions = [];
   bool _isLoading = true;
   String _selectedPeriod = 'Weekly'; // 'Weekly' ho 'Monthly'
-
+  String _selectedFilter = 'Expense';
+  
   @override
   void initState() {
     super.initState();
+    // 👈 expense_list_screen එකෙන් එවපු Income/Expense අගය මෙතනට ගන්නවා
+    _selectedFilter = widget.initialType; 
     _fetchData();
   }
 
