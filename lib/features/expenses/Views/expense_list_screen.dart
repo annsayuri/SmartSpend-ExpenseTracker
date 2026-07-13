@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; 
 import 'package:fl_chart/fl_chart.dart';
-import '../../analytics_screen.dart';
+import 'analytics_screen.dart'; // 👈 Oyage thiyena import path eka mehemama thiyන්න
 import '../../../core/database/db_helper.dart'; 
 import 'add_transaction_screen.dart';
 
@@ -59,7 +59,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         .fold(0.0, (sum, tx) => sum + tx['amount']);
   }
 
-  // 🧠 SMART ICON PICKER: පරණ බග් ඔක්කොම ස්ථිරවම පිරිසිදු කරලා හැදුවා!
   Map<String, dynamic> _getCategoryStyle(String title, String type) {
     String lowerTitle = title.toLowerCase();
     
@@ -69,7 +68,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       }
       return {'icon': Icons.add_card_rounded, 'color': Colors.teal.shade600};
     } else {
-      // 🏥 Fixed Typos: clinic, care, insurance
       if (lowerTitle.contains('medicine') || lowerTitle.contains('care') || lowerTitle.contains('doctor') || lowerTitle.contains('hospital') || lowerTitle.contains('clinic')) {
         return {'icon': Icons.medical_services_rounded, 'color': Colors.teal.shade700};
       }
@@ -250,56 +248,76 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
+  // 🥧 UPDATED PIE CHART CARD: Clicking on indicators now triggers dynamic filtering
   Widget _buildPieChartCard() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
-        );
-      },
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0), side: const BorderSide(color: Color(0xFFE9ECEF))),
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('ANALYTICS OVERVIEW', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 1.2)),
-              const SizedBox(height: 24.0),
-              _transactions.isEmpty
-                  ? const SizedBox(
-                      height: 140,
-                      child: Center(child: Text('📊 Add transactions for analytics', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500))),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                       SizedBox(
-                       height: 130,
-                       width: 130,
-                       child: PieChart( 
-                         PieChartData(
-                           sectionsSpace: 5,
-                           centerSpaceRadius: 35,
-                           sections: _getPieChartSections(),
-                         ),
-                       ),
-                     ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildChartIndicator(Colors.green.shade600, 'Income'), 
-                            const SizedBox(height: 12.0),
-                            _buildChartIndicator(Colors.orange.shade700, 'Expense'), 
-                          ],
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0), side: const BorderSide(color: Color(0xFFE9ECEF))),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('ANALYTICS OVERVIEW', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey, letterSpacing: 1.2)),
+            const SizedBox(height: 24.0),
+            _transactions.isEmpty
+                ? const SizedBox(
+                    height: 140,
+                    child: Center(child: Text('📊 Add transactions for analytics', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500))),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Whole Pie Chart goes to Expense analytics by default
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AnalyticsScreen(initialType: 'Expense')),
+                          );
+                        },
+                        child: SizedBox(
+                          height: 130,
+                          width: 130,
+                          child: PieChart( 
+                            PieChartData(
+                              sectionsSpace: 5,
+                              centerSpaceRadius: 35,
+                              sections: _getPieChartSections(),
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-            ],
-          ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 🟢 Income click කලොත් Income Breakdown යනවා
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const AnalyticsScreen(initialType: 'Income')),
+                              );
+                            },
+                            child: _buildChartIndicator(Colors.green.shade600, 'Income ➡️'),
+                          ),
+                          const SizedBox(height: 18.0),
+                          // 🟠 Expense click කලොත් Expense Breakdown යනවා
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const AnalyticsScreen(initialType: 'Expense')),
+                              );
+                            },
+                            child: _buildChartIndicator(Colors.orange.shade700, 'Expense ➡️'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+          ],
         ),
       ),
     );
@@ -365,7 +383,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                     final tx = filteredList[index];
                     final isIncome = tx['type'] == 'Income';
                     
-                    // 🎨 Smart Category Style එක මෙතනින් ගන්නවා
                     final style = _getCategoryStyle(tx['title'], tx['type']);
 
                     return Dismissible(
@@ -400,7 +417,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         date: tx['date'],
                         amount: '${isIncome ? '+' : '-'} Rs. ${tx['amount'].toStringAsFixed(2)}',
                         amountColor: isIncome ? Colors.green.shade600 : Colors.red.shade600, 
-                        iconColor: style['color'], // ✅ දැන් Icon එකට හරියටම Category Color එක යනවා!
+                        iconColor: style['color'], 
                         icon: style['icon'], 
                       ),
                     );
@@ -452,7 +469,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  // 🛠️ Named Parameters දාලා මේක සුපිරියටම Clean කළා!
   Widget _buildTransactionItem({
     required String title, 
     required String date, 
@@ -469,12 +485,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
         leading: CircleAvatar(
           radius: 20,
-          backgroundColor: iconColor.withOpacity(0.08), // ✅ Category Color එකෙන් ලස්සන වෙනවා
-          child: Icon(icon, color: iconColor, size: 20), // ✅ Icon එකත් ඒ පාටම වෙනවා
+          backgroundColor: iconColor.withOpacity(0.08), 
+          child: Icon(icon, color: iconColor, size: 20), 
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF212529), fontSize: 15)),
         subtitle: Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        trailing: Text(amount, style: TextStyle(color: amountColor, fontWeight: FontWeight.w700, fontSize: 15)), // ✅ ගාණ විතරක් Red/Green වෙනවා
+        trailing: Text(amount, style: TextStyle(color: amountColor, fontWeight: FontWeight.w700, fontSize: 15)), 
       ),
     );
   }
