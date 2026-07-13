@@ -3,7 +3,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:smartspend_expensetracker/core/database/db_helper.dart';
 
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({super.key});
+  final String initialType; // 👈 මේ පේළිය එකතු කරන්න
+
+  // 👈 Constructor එක මෙන්න මේ විදිහට වෙනස් කරන්න:
+  const AnalyticsScreen({super.key, this.initialType = 'Expense'}); 
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -42,7 +45,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     };
 
     for (var tx in _transactions) {
-      if (tx['type'] == 'Expense') {
+      if (tx['type'] == widget.initialType) {
         String title = tx['title'].toString().toLowerCase();
         double amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
         String category = 'Other';
