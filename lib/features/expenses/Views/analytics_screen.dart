@@ -3,9 +3,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:smartspend_expensetracker/core/database/db_helper.dart';
 
 class AnalyticsScreen extends StatefulWidget {
-  final String initialType; // 👈 මේ පේළිය එකතු කරන්න
+  final String initialType;
 
-  // 👈 Constructor එක මෙන්න මේ විදිහට වෙනස් කරන්න:
   const AnalyticsScreen({super.key, this.initialType = 'Expense'}); 
 
   @override
@@ -17,13 +16,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<Map<String, dynamic>> _transactions = [];
   bool _isLoading = true;
   String _selectedPeriod = 'Weekly'; // 'Weekly' ho 'Monthly'
-  String _selectedFilter = 'Expense';
-  
+  String _selectedType = 'Expense';
+
   @override
   void initState() {
     super.initState();
     // 👈 expense_list_screen එකෙන් එවපු Income/Expense අගය මෙතනට ගන්නවා
-    _selectedFilter = widget.initialType; 
+    _selectedType = widget.initialType; 
     _fetchData();
   }
 
@@ -36,24 +35,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     });
   }
 
-  // 🧮 Category anuwa wiyadam ekathu karala map ekak hadagannawa
+  // 🧮 Category anuwa filter karala map ekak hadagannawa
   Map<String, double> _getCategoryExpenses() {
-    // Categories default reset ekak ekka thiyagannawa dynamic adu paadu novenna
+    // 👈 Income හෝ Expense දෙකටම ගැලපෙන පොදු Category ටිකක් දාගනිමු
     Map<String, double> categoryMap = {
       'Food': 0.0,
       'Transport': 0.0,
       'Medical': 0.0,
       'Bills': 0.0,
+      'Salary/Allowance': 0.0, // 👈 Income සඳහා විශේෂයෙන්
       'Other': 0.0,
     };
 
     for (var tx in _transactions) {
-      if (tx['type'] == widget.initialType) {
+      // 🎯 FIXED: මෙතන widget.initialType වෙනුවට _selectedType දාන්න ඕනේ!
+      if (tx['type'] == _selectedType) { 
         String title = tx['title'].toString().toLowerCase();
         double amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
         String category = 'Other';
         
-        // 🔍 Spelling mistakes (insuarance/insurance) okkoma cover wana lesa
+        // 🔍 Category criteria
         if (title.contains('bus') || 
             title.contains('car') || 
             title.contains('train') || 
@@ -67,6 +68,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           category = 'Medical';
         } else if (title.contains('bill') || title.contains('current') || title.contains('water') || title.contains('recharge')) {
           category = 'Bills';
+        } else if (title.contains('salary') || title.contains('padi') || title.contains('allowance') || title.contains('gift')) {
+          category = 'Salary/Allowance';
         }
 
         categoryMap[category] = (categoryMap[category] ?? 0.0) + amount;
@@ -80,11 +83,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final categoryExpenses = _getCategoryExpenses();
     final totalExpense = categoryExpenses.values.fold(0.0, (sum, item) => sum + item);
 
+    // 🎨 Dynamic colors and text for Income/Expense
+    final isExpense = _selectedType == 'Expense';
+    final themeColor = isExpense ? Colors.red.shade400 : Colors.green.shade500;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Advanced Analytics 📊', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.deepPurple.shade700,
+        title: Text('Advanced Analytics ($_selectedType) 📊', style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: isExpense ? Colors.deepPurple.shade700 : Colors.teal.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -102,9 +109,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Expense Breakdown',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212529)),
+                          Text(
+                            '$_selectedType Breakdown', // 🎯 FIXED: Dynamic text
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212529)),
                           ),
                           SegmentedButton<String>(
                             segments: const [
@@ -118,8 +125,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               });
                             },
                             style: SegmentedButton.styleFrom(
-                              selectedBackgroundColor: Colors.deepPurple.shade100,
-                              selectedForegroundColor: Colors.deepPurple.shade800,
+                              selectedBackgroundColor: isExpense ? Colors.deepPurple.shade100 : Colors.teal.shade100,
+                              selectedForegroundColor: isExpense ? Colors.deepPurple.shade800 : Colors.teal.shade800,
                             ),
                           ),
                         ],
@@ -139,9 +146,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Expense Overview (Rs.)',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey),
+                              Text(
+                                '$_selectedType Overview (Rs.)', // 🎯 FIXED: Dynamic text
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey),
                               ),
                               const SizedBox(height: 30),
                               SizedBox(
@@ -163,7 +170,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                               case 1: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Transport', style: style));
                                               case 2: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Medical', style: style));
                                               case 3: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Bills', style: style));
-                                              case 4: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Other', style: style));
+                                              case 4: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Salary', style: style));
+                                              case 5: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Other', style: style));
                                               default: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('', style: style));
                                             }
                                           },
@@ -180,7 +188,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                       _makeBarGroup(1, categoryExpenses['Transport'] ?? 0, Colors.orange.shade600),
                                       _makeBarGroup(2, categoryExpenses['Medical'] ?? 0, Colors.teal.shade600),
                                       _makeBarGroup(3, categoryExpenses['Bills'] ?? 0, Colors.blue.shade600),
-                                      _makeBarGroup(4, categoryExpenses['Other'] ?? 0, Colors.amber.shade700),
+                                      _makeBarGroup(4, categoryExpenses['Salary/Allowance'] ?? 0, Colors.green.shade600),
+                                      _makeBarGroup(5, categoryExpenses['Other'] ?? 0, Colors.amber.shade700),
                                     ],
                                   ),
                                 ),
@@ -192,14 +201,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       const SizedBox(height: 24),
 
                       // 📜 2. CATEGORY WISE DETAILS LIST
-                      const Text(
-                        'Category Spending',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212529)),
+                      Text(
+                        'Category Spending ($_selectedType)', // 🎯 FIXED: Dynamic text
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212529)),
                       ),
                       const SizedBox(height: 12),
                       ...categoryExpenses.entries.map((entry) {
                         final percent = totalExpense > 0 ? (entry.value / totalExpense) * 100 : 0.0;
-                        // 0 ta wada wadi wiyadam thiyena ewath, wiyadam zero nam okkoma categories methana pennanawa
                         if (entry.value == 0 && totalExpense > 0) return const SizedBox.shrink();
 
                         return Card(
@@ -211,10 +219,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           ),
                           child: ListTile(
                             title: Text(entry.key, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('${percent.toStringAsFixed(1)}% of total expenses'),
+                            subtitle: Text('${percent.toStringAsFixed(1)}% of total ${_selectedType.toLowerCase()}'), // 🎯 FIXED
                             trailing: Text(
                               'Rs. ${entry.value.toStringAsFixed(2)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 15),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold, 
+                                color: themeColor, // 🎯 FIXED: Expense නම් රතු, Income නම් කොළ 🎨
+                                fontSize: 15
+                              ),
                             ),
                           ),
                         );
