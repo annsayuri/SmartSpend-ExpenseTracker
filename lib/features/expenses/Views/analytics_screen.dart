@@ -26,7 +26,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   // 🎯 NEW: Pie Chart එකෙන් එලියෙන් Type එක මාරු කරලා මේ ස්ක්‍රීන් එකට එවද්දී 
-  // මේකෙන් තමයි අලුත් අගය අරන් මුළු Page එකම Update කරන්නේ!
   @override
   void didUpdateWidget(covariant AnalyticsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -51,7 +50,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   // 🧮 Category anuwa filter karala map ekak hadagannawa
-  Map<String, double> _getCategoryExpenses() {
+Map<String, double> _getCategoryExpenses() {
     Map<String, double> categoryMap = {
       'Food': 0.0,
       'Transport': 0.0,
@@ -63,38 +62,41 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     for (var tx in _transactions) {
       if (tx['type'] == _selectedType) { 
-        // 🔍 Title එක වගේම Category හෝ Description එකත් චෙක් කරනවා ආරක්ෂාවට
         String title = (tx['title'] ?? '').toString().toLowerCase();
         String categoryField = (tx['category'] ?? '').toString().toLowerCase();
-        
         double amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
+        
         String category = 'Other';
         
-        // 🚌 Transport checking (මෙතන title හෝ categoryField දෙකම බලනවා)
+        // 🚌 Transport
         if (title.contains('bus') || title.contains('car') || title.contains('transport') ||
-            categoryField.contains('bus') || categoryField.contains('car') || categoryField.contains('transport') ||
-            title.contains('train') || title.contains('service')) {
+            title.contains('train') || categoryField.contains('transport')) {
           category = 'Transport';
         } 
-        // 🍔 Food checking
+        // 🍔 Food
         else if (title.contains('food') || title.contains('eat') || title.contains('kottu') ||
-                 categoryField.contains('food') || categoryField.contains('eat')) {
+                 categoryField.contains('food')) {
           category = 'Food';
         } 
-        // 🏥 Medical checking
-        else if (title.contains('medicine') || title.contains('doctor') || title.contains('hospital') ||
-                 categoryField.contains('medical') || categoryField.contains('medicine')) {
+        // 🏥 Medical (මෙතන Keywords වැඩි කළා!)
+        else if (title.contains('medical') || title.contains('medicine') || title.contains('doctor') || 
+                 title.contains('hospital') || title.contains('clinic') || title.contains('pharmacy') ||
+                 title.contains('health') || categoryField.contains('medical')) {
           category = 'Medical';
         } 
-        // 💡 Bills checking
-        else if (title.contains('bill') || title.contains('current') || title.contains('water') ||
+        // 💡 Bills
+        else if (title.contains('bill') || title.contains('electric') || title.contains('water') ||
                  categoryField.contains('bill')) {
           category = 'Bills';
         } 
-        // 💵 Salary checking
+        // 💵 Salary
         else if (title.contains('salary') || title.contains('padi') || title.contains('allowance') ||
-                 categoryField.contains('salary') || categoryField.contains('income')) {
+                 categoryField.contains('income')) {
           category = 'Salary/Allowance';
+        }
+        else {
+          // 🔎 ඔයාට බලාගන්න පුළුවන් "Other" එකට මොනවද වැටෙන්නේ කියලා Console එකේ
+          print("Uncategorized Item Found: $title"); 
         }
 
         categoryMap[category] = (categoryMap[category] ?? 0.0) + amount;
