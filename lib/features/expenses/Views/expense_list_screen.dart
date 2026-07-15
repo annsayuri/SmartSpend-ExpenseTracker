@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'analytics_screen.dart'; 
 import 'package:smartspend_expensetracker/core/database/db_helper.dart';
 import 'add_transaction_screen.dart';
+import 'settings_screen.dart'; 
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
@@ -110,11 +111,26 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA), 
+      // 🌟 UPDATED APPBAR WITH SETTINGS BUTTON 🌟
       appBar: AppBar(
         title: const Text('SmartSpend 💰', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.8)),
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings & Profile',
+            onPressed: () async {
+              // Settings Screen එකට Navigation එක
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+              _refreshTransactions(); // ආයෙ එද්දී Update වෙලාද බලන්න
+            },
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator()) 
@@ -248,7 +264,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  // 🥧 UPDATED PIE CHART CARD: Clicking on indicators now triggers dynamic filtering
   Widget _buildPieChartCard() {
     return Card(
       elevation: 0,
@@ -269,7 +284,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // Whole Pie Chart goes to Expense analytics by default
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -292,7 +306,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 🟢 Income click කලොත් Income Breakdown යනවා
                           GestureDetector(
                             onTap: () {
                               Navigator.push(
@@ -303,7 +316,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                             child: _buildChartIndicator(Colors.green.shade600, 'Income ➡️'),
                           ),
                           const SizedBox(height: 18.0),
-                          // 🟠 Expense click කලොත් Expense Breakdown යනවා
                           GestureDetector(
                             onTap: () {
                               Navigator.push(
