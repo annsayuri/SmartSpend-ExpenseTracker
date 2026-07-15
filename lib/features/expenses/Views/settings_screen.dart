@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // 👈 Provider එක import කළා
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartspend_expensetracker/core/Theme/theme_provider.dart';
 
@@ -10,63 +11,49 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isDarkMode = false;
+  String _userName = 'User';
   final TextEditingController _nameController = TextEditingController();
-  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _loadPreferences();
+    _loadUserData();
   }
 
-  // 📥 Shared Preferences වලින් User Data සහ Theme settings කියවීම
-  void _loadPreferences() async {
+  void _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _isDarkMode = prefs.getBool('isDarkMode') ?? false;
-      _nameController.text = prefs.getString('userName') ?? 'Homemaker'; // Default name
+      _userName = prefs.getString('user_name') ?? 'User';
+      _nameController.text = _userName;
     });
   }
 
-  // 💾 User Data සහ Theme settings සේව් කිරීම
-  void _saveProfileName() async {
-    setState(() {
-      _isSaving = true;
-    });
+  void _saveUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('userName', _nameController.text);
-    
+    await prefs.setString('user_name', _nameController.text);
+    setState(() {
+      _userName = _nameController.text;
+    });
     if (!mounted) return;
-    setState(() {
-      _isSaving = false;
-    });
-
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile updated successfully! 🎉')),
+      SnackBar(
+        content: const Text('Profile updated successfully!'),
+        backgroundColor: Colors.deepPurple.shade700,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
-  }
-
-  void _toggleTheme(bool value) async {
-    setState(() {
-      _isDarkMode = value;
-    });
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkMode', value);
-    
-    // 💡 මෙතනදී මුළු App එකටම තීම් එක Apply වෙන්න නම් main.dart එක රීබිල්ඩ් වෙන්න ඕනේ.
-    // දැනට UI එක විතරක් වෙනස් වන විදිහ මෙතන තියෙනවා.
   }
 
   @override
   Widget build(BuildContext context) {
+    // 🌟 මෙතනින් තමයි මුළු App එකේම තියෙන Theme Provider එකට සවන් දෙන්නේ 🌟
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
-      backgroundColor: _isDarkMode ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text('Settings & Profile ⚙️', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
-        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -76,81 +63,86 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 👤 1. PROFILE CARD
+                // Profile Section
                 Card(
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(20.0),
+                    side: const BorderSide(color: Color(0xFFE9ECEF)),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(24.0),
                     child: Column(
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           radius: 40,
-                          backgroundColor: Colors.deepPurple,
-                          child: Icon(Icons.person, size: 50, color: Colors.white),
+                          backgroundColor: Colors.deepPurple.shade100,
+                          child: Icon(Icons.person, size: 48, color: Colors.deepPurple.shade700),
                         ),
-                        const SizedBox(height: 15),
+                        const SizedBox(height: 16.0),
                         TextField(
                           controller: _nameController,
                           decoration: InputDecoration(
                             labelText: 'User Name',
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12.0),
                             ),
                             prefixIcon: const Icon(Icons.edit),
                           ),
                         ),
-                        const SizedBox(height: 15),
+                        const SizedBox(height: 16.0),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: _isSaving ? null : _saveProfileName,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
+                              backgroundColor: Colors.deepPurple.shade700,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 14.0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
                             ),
-                            child: _isSaving 
-                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white))
-                              : const Text('Save Profile Details', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            onPressed: _saveUserData,
+                            child: const Text('Save Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-
-                // ⚙️ 2. APP OPTIONS CARD
+                const SizedBox(height: 24.0),
+                
                 const Text(
                   'App Preferences',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 12.0),
+
+                // Theme Settings Section
                 Card(
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    side: BorderSide(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(20.0),
+                    side: const BorderSide(color: Color(0xFFE9ECEF)),
                   ),
                   child: Column(
                     children: [
+                      // 🌟 මෙන්න මේ Switch එක දැන් Provider එකත් එක්ක කෙලින්ම වැඩ කරනවා! 🌟
                       SwitchListTile(
-                        title: const Text('Dark Mode 🌙', style: TextStyle(fontWeight: FontWeight.w500)),
+                        title: const Text('Dark Mode 🌙', style: TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: const Text('Switch between light and dark theme'),
-                        value: _isDarkMode,
-                        activeColor: Colors.deepPurple,
-                        onChanged: _toggleTheme,
+                        value: themeProvider.isDarkMode, // 👈 Provider එකේ තියෙන අගය මෙතනට ගන්නවා
+                        activeColor: Colors.deepPurple.shade700,
+                        onChanged: (bool value) {
+                          // 👈 Switch එක එහා මෙහා කරද්දී මුළු App එකේම Theme එක මාරු කරනවා
+                          themeProvider.toggleTheme(value);
+                        },
                       ),
                       const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.info_outline, color: Colors.grey),
-                        title: const Text('App Version'),
-                        trailing: const Text('v1.0.0', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                      const ListTile(
+                        leading: Icon(Icons.info_outline),
+                        title: Text('App Version'),
+                        trailing: Text('v1.0.0', style: TextStyle(color: Colors.grey)),
                       ),
                     ],
                   ),
