@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'; // 👈 වෙබ් එක සඳහා
 import 'features/expenses/views/expense_list_screen.dart';
+import 'package:smartspend_expensetracker/core/Theme/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
