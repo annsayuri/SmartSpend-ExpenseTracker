@@ -15,13 +15,13 @@ dependencies:
   sqflite: ^2.4.0
   path: ^1.9.0
   intl: ^0.19.0 # 👈 ඩේට් ෆෝමැට් කරන්න දාපු පැකේජ් එක
-
+  
   # 🌐 Chrome (Web) එකේ SQLite වැඩ කරන්න මේ පැකේජ් දෙක අනිවාර්යයෙන්ම එකතු කරන්න:
   sqflite_common_ffi: ^2.3.0
   sqflite_common_ffi_web: ^0.4.0
   fl_chart: ^1.2.0
   shared_preferences: ^2.3.2
-
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_test:
