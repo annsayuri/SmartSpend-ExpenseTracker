@@ -5,6 +5,8 @@ import 'analytics_screen.dart';
 import 'package:smartspend_expensetracker/core/database/db_helper.dart';
 import 'add_transaction_screen.dart';
 import 'settings_screen.dart'; 
+// Note: ඊළඟට හදන History Screen එක මෙතනට Import කරන්න ඕනේ.
+// import 'transaction_history_screen.dart'; 
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
@@ -17,9 +19,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   final DBHelper _dbHelper = DBHelper(); 
   List<Map<String, dynamic>> _transactions = []; 
   bool _isLoading = true; 
-
-  String _searchQuery = '';
-  String _selectedFilter = 'All'; // 'All', 'Income', 'Expense'
 
   @override
   void initState() {
@@ -98,20 +97,22 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     _refreshTransactions(); 
   }
 
+  // 🛠️ UPDATE OPERATION: Transaction එකක් Edit කරන්න මෙන්න මේ Func එක පාවිච්චි වෙනවා
+  void _editTransaction(Map<String, dynamic> tx) async {
+    // 💡 ඊළඟ පියවරේදී AddTransactionScreen එකම Edit කරන්නත් පුළුවන් වෙන විදිහට අපි හදමු.
+    // දැනට මම Placeholder එකක් තැබුවා.
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWeb = screenWidth > 800;
-    final isDark = Theme.of(context).brightness == Brightness.dark; // 🌓 Dark Mode එක On ද නැද්ද කියලා මෙතනින් බලනවා
+    final isDark = Theme.of(context).brightness == Brightness.dark; 
 
-    final filteredTransactions = _transactions.where((tx) {
-      final matchesSearch = tx['title'].toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesFilter = _selectedFilter == 'All' || tx['type'] == _selectedFilter;
-      return matchesSearch && matchesFilter;
-    }).toList();
+    // 🕒 DASHBOARD REQUIREMENT: මෙතනදී පෙන්වන්නේ අලුත්ම Transactions 4ක් විතරයි (Dashboard එක ලස්සනට තියාගන්න)
+    final recentTransactions = _transactions.take(4).toList();
 
     return Scaffold(
-      // 🛠️ FIX 1: Background Color එක Theme එකට අනුව වෙනස් වෙනවා
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA), 
       appBar: AppBar(
         title: const Text('SmartSpend 💰', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.8)),
@@ -134,42 +135,46 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator()) 
-          : Center(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 1200), 
+          : RefreshIndicator(
+              onRefresh: () async => _refreshTransactions(),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16.0),
-                child: isWeb 
-                    ? Row( 
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 5,
-                            child: SingleChildScrollView(
-                              child: Column(
-                                children: [
-                                  _buildBalanceCard(isDark),
-                                  const SizedBox(height: 16.0),
-                                  _buildPieChartCard(isDark),
-                                ],
+                child: Center(
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 1200), 
+                    child: isWeb 
+                        ? Row( 
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 5,
+                                child: Column(
+                                  children: [
+                                    _buildBalanceCard(isDark),
+                                    const SizedBox(height: 16.0),
+                                    _buildPieChartCard(isDark),
+                                  ],
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 24.0),
+                              Expanded(
+                                flex: 6,
+                                child: _buildRecentTransactionSection(recentTransactions, isDark),
+                              ),
+                            ],
+                          )
+                        : Column( 
+                            children: [
+                              _buildBalanceCard(isDark),
+                              const SizedBox(height: 16.0),
+                              _buildPieChartCard(isDark),
+                              const SizedBox(height: 20.0),
+                              _buildRecentTransactionSection(recentTransactions, isDark),
+                            ],
                           ),
-                          const SizedBox(width: 24.0),
-                          Expanded(
-                            flex: 6,
-                            child: _buildTransactionListSection(filteredTransactions, isDark),
-                          ),
-                        ],
-                      )
-                    : Column( 
-                        children: [
-                          _buildBalanceCard(isDark),
-                          const SizedBox(height: 16.0),
-                          _buildPieChartCard(isDark),
-                          const SizedBox(height: 20.0),
-                          Expanded(child: _buildTransactionListSection(filteredTransactions, isDark)),
-                        ],
-                      ),
+                  ),
+                ),
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
@@ -199,7 +204,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-      // 🛠️ FIX 2: Balance card එක Dark Mode එකට ලස්සන ගැලපෙන පාටක් දානවා
       color: isNegative 
           ? (isDark ? Colors.red.shade900.withOpacity(0.4) : Colors.red.shade50.withOpacity(0.8)) 
           : (isDark ? Colors.deepPurple.shade900.withOpacity(0.2) : Colors.deepPurple.shade50.withOpacity(0.6)),
@@ -272,7 +276,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         borderRadius: BorderRadius.circular(20.0), 
         side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF))
       ),
-      color: isDark ? const Color(0xFF1E1E1E) : Colors.white, // 🛠️ FIX 3: Card Background
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white, 
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -339,100 +343,72 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  Widget _buildTransactionListSection(List<Map<String, dynamic>> filteredList, bool isDark) {
+  Widget _buildRecentTransactionSection(List<Map<String, dynamic>> recentList, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF212529))),
-        const SizedBox(height: 12.0),
-        
-        TextField(
-          onChanged: (value) => setState(() => _searchQuery = value),
-          style: TextStyle(color: isDark ? Colors.white : Colors.black),
-          decoration: InputDecoration(
-            hintText: 'Search transactions...',
-            hintStyle: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey),
-            prefixIcon: const Icon(Icons.search, color: Colors.grey),
-            filled: true,
-            fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white, // 🛠️ FIX 4: Search input box background
-            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12.0),
-
         Row(
-          children: ['All', 'Income', 'Expense'].map((filterType) {
-            final isSelected = _selectedFilter == filterType;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: ChoiceChip(
-                label: Text(filterType),
-                selected: isSelected,
-                selectedColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade100,
-                backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                labelStyle: TextStyle(
-                  color: isSelected 
-                      ? (isDark ? Colors.deepPurple.shade200 : Colors.deepPurple.shade800) 
-                      : (isDark ? Colors.grey.shade400 : Colors.black87),
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-                onSelected: (bool selected) {
-                  if (selected) {
-                    setState(() => _selectedFilter = filterType);
-                  }
-                },
-              ),
-            );
-          }).toList(),
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Recent Transactions', 
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF212529)),
+            ),
+            // 🔗 LINK TO ARCHIVE: මේකෙන් ඔක්කොම Transactions බලන්න පුළුවන් History Screen එකට යනවා
+            TextButton(
+              onPressed: () {
+                // TODO: ඊළඟ ස්ටෙප් එකෙන් මේ Screen එක හදලා මේක Uncomment කරමු.
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()),
+                // ).then((_) => _refreshTransactions());
+              },
+              child: const Text('View All', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
         ),
         const SizedBox(height: 12.0),
+        recentList.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 30.0),
+                child: Center(child: Text('No transactions added yet! ✨', style: TextStyle(color: Colors.grey))),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: recentList.length,
+                itemBuilder: (context, index) {
+                  final tx = recentList[index];
+                  final isIncome = tx['type'] == 'Income';
+                  final style = _getCategoryStyle(tx['title'], tx['type']);
 
-        Expanded(
-          child: filteredList.isEmpty
-              ? const Center(child: Text('No matching transactions found! 🔍', style: TextStyle(color: Colors.grey)))
-              : ListView.builder(
-                  itemCount: filteredList.length,
-                  itemBuilder: (context, index) {
-                    final tx = filteredList[index];
-                    final isIncome = tx['type'] == 'Income';
-                    
-                    final style = _getCategoryStyle(tx['title'], tx['type']);
-
-                    return Dismissible(
-                      key: Key(tx['id'].toString()), 
-                      direction: DismissDirection.endToStart, 
-                      background: Container(
-                        margin: const EdgeInsets.only(bottom: 12.0),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade400, 
-                          borderRadius: BorderRadius.circular(16.0),
-                        ),
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                        child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 28),
+                  return Dismissible(
+                    key: Key(tx['id'].toString()), 
+                    direction: DismissDirection.endToStart, 
+                    background: Container(
+                      margin: const EdgeInsets.only(bottom: 12.0),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade400, 
+                        borderRadius: BorderRadius.circular(16.0),
                       ),
-                      onDismissed: (direction) async {
-                        await _dbHelper.deleteTransaction(tx['id']);
-                        _refreshTransactions();
-
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('"${tx['title']}" deleted successfully!'),
-                            backgroundColor: Colors.red.shade400,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                        );
-                      },
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 28),
+                    ),
+                    onDismissed: (direction) async {
+                      await _dbHelper.deleteTransaction(tx['id']);
+                      _refreshTransactions();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('"${tx['title']}" deleted successfully!'),
+                          backgroundColor: Colors.red.shade400,
+                        ),
+                      );
+                    },
+                    child: InkWell(
+                      onTap: () => _editTransaction(tx), // Click කරලා Edit කරන්න පුළුවන් (CRUD Update)
+                      borderRadius: BorderRadius.circular(16.0),
                       child: _buildTransactionItem(
                         title: tx['title'],
                         date: tx['date'],
@@ -442,10 +418,10 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         icon: style['icon'], 
                         isDark: isDark,
                       ),
-                    );
-                  },
-                ),
-        ),
+                    ),
+                  );
+                },
+              ),
       ],
     );
   }
@@ -507,7 +483,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         borderRadius: BorderRadius.circular(16.0), 
         side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF))
       ),
-      color: isDark ? const Color(0xFF1E1E1E) : Colors.white, // 🛠️ FIX 5: List Items Card Color
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white, 
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
         leading: CircleAvatar(
