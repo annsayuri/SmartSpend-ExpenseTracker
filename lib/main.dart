@@ -4,17 +4,23 @@ import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'; // 👈 වෙබ් එක සඳහා
 import 'features/expenses/views/expense_list_screen.dart';
 import 'package:smartspend_expensetracker/core/Theme/theme_provider.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (kIsWeb) {
-    // 🌐 වෙබ් එක සඳහා databaseFactory එක සෙට් කිරීම (සරලවම මෙහෙම දැම්මම ඇති!)
+    // 🌐 වෙබ් එක සඳහා databaseFactory එක සෙට් කිරීම
     databaseFactory = databaseFactoryFfiWeb;
   }
 
-  // ✅ MyApp() වෙනුවට ඔයාගේ ඇප් එකේ නම වන SmartSpendApp() දැම්මා
-  runApp(const SmartSpendApp());
+  // 🌟 මෙතනින් මුළු App එකටම ThemeProvider එක සම්බන්ධ කරනවා 🌟
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ThemeProvider(),
+      child: const SmartSpendApp(),
+    ),
+  );
 }
 
 class SmartSpendApp extends StatelessWidget {
@@ -22,9 +28,16 @@ class SmartSpendApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    // 🌟 මෙතනින් දැනට තියෙන Theme එක (Light හෝ Dark) කියවලා ගන්නවා 🌟
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: ExpenseListScreen(), // 👈 ඔන්න අපි හදපු Screen එක මෙතනට සම්බන්ධ කළා
-    ); // MaterialApp
+      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      theme: ThemeData.light(useMaterial3: true), // Light Theme එක
+      darkTheme: ThemeData.dark(useMaterial3: true), // Dark Theme එක
+      home: const ExpenseListScreen(), // ඔන්න අපි හදපු Screen එක මෙතනට සම්බන්ධ කළා
+    );
   }
+
 }
