@@ -25,7 +25,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     _fetchData();
   }
 
-  // 🎯 NEW: Pie Chart එකෙන් එලියෙන් Type එක මාරු කරලා මේ ස්ක්‍රීන් එකට එවද්දී 
   @override
   void didUpdateWidget(covariant AnalyticsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -33,7 +32,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       setState(() {
         _selectedType = widget.initialType;
       });
-      _fetchData(); // 🔄 Data ටික අලුතින් ෆිල්ටර් කරන්න ගන්නවා
+      _fetchData(); 
     }
   }
 
@@ -49,8 +48,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     });
   }
 
-  // 🧮 Category anuwa filter karala map ekak hadagannawa
-Map<String, double> _getCategoryExpenses() {
+  Map<String, double> _getCategoryExpenses() {
     Map<String, double> categoryMap = {
       'Food': 0.0,
       'Transport': 0.0,
@@ -68,34 +66,28 @@ Map<String, double> _getCategoryExpenses() {
         
         String category = 'Other';
         
-        // 🚌 Transport
         if (title.contains('bus') || title.contains('car') || title.contains('transport') ||
             title.contains('train') || categoryField.contains('transport')) {
           category = 'Transport';
         } 
-        // 🍔 Food
         else if (title.contains('food') || title.contains('eat') || title.contains('kottu') ||
                  categoryField.contains('food')) {
           category = 'Food';
         } 
-        // 🏥 Medical (මෙතන Keywords වැඩි කළා!)
         else if (title.contains('medical') || title.contains('medicine') || title.contains('doctor') || 
                  title.contains('hospital') || title.contains('clinic') || title.contains('pharmacy') ||
                  title.contains('health') || categoryField.contains('medical')) {
           category = 'Medical';
         } 
-        // 💡 Bills
         else if (title.contains('bill') || title.contains('electric') || title.contains('water') ||
                  categoryField.contains('bill')) {
           category = 'Bills';
         } 
-        // 💵 Salary
         else if (title.contains('salary') || title.contains('padi') || title.contains('allowance') ||
                  categoryField.contains('income')) {
           category = 'Salary/Allowance';
         }
         else {
-          // 🔎 ඔයාට බලාගන්න පුළුවන් "Other" එකට මොනවද වැටෙන්නේ කියලා Console එකේ
           print("Uncategorized Item Found: $title"); 
         }
 
@@ -107,14 +99,23 @@ Map<String, double> _getCategoryExpenses() {
 
   @override
   Widget build(BuildContext context) {
+    // 🌙 Dark Mode එක On ද කියලා Check කරනවා
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final categoryExpenses = _getCategoryExpenses();
     final totalExpense = categoryExpenses.values.fold(0.0, (sum, item) => sum + item);
 
     final isExpense = _selectedType == 'Expense';
     final themeColor = isExpense ? Colors.red.shade400 : Colors.green.shade500;
 
+    // 🎨 Dynamic Colors (Mode එක අනුව මාරු වෙනවා)
+    final scaffoldBg = isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA);
+    final cardBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF212529);
+    final borderColor = isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE9ECEF);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
         title: Text('Advanced Analytics ($_selectedType) 📊', style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: isExpense ? Colors.deepPurple.shade700 : Colors.teal.shade700,
@@ -136,7 +137,7 @@ Map<String, double> _getCategoryExpenses() {
                         children: [
                           Text(
                             '$_selectedType Breakdown', 
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212529)),
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
                           ),
                           SegmentedButton<String>(
                             segments: const [
@@ -162,9 +163,9 @@ Map<String, double> _getCategoryExpenses() {
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20.0),
-                          side: const BorderSide(color: Color(0xFFE9ECEF)),
+                          side: BorderSide(color: borderColor),
                         ),
-                        color: Colors.white,
+                        color: cardBg,
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
                           child: Column(
@@ -188,15 +189,20 @@ Map<String, double> _getCategoryExpenses() {
                                         sideTitles: SideTitles(
                                           showTitles: true,
                                           getTitlesWidget: (double value, TitleMeta meta) {
-                                            const style = TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold, fontSize: 11);
+                                            // 📊 Chart එක යට තියෙන Category අකුරු වල පාටත් Dark Mode එකට ගැලපෙන්න හැදුවා
+                                            final style = TextStyle(
+                                              color: isDark ? Colors.grey.shade400 : Colors.blueGrey, 
+                                              fontWeight: FontWeight.bold, 
+                                              fontSize: 11
+                                            );
                                             switch (value.toInt()) {
-                                              case 0: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Food', style: style));
-                                              case 1: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Transport', style: style));
-                                              case 2: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Medical', style: style));
-                                              case 3: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Bills', style: style));
-                                              case 4: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Salary', style: style));
-                                              case 5: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('Other', style: style));
-                                              default: return const Padding(padding: EdgeInsets.only(top: 8.0), child: Text('', style: style));
+                                              case 0: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Food', style: style));
+                                              case 1: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Transport', style: style));
+                                              case 2: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Medical', style: style));
+                                              case 3: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Bills', style: style));
+                                              case 4: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Salary', style: style));
+                                              case 5: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Other', style: style));
+                                              default: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('', style: style));
                                             }
                                           },
                                         ),
@@ -226,7 +232,7 @@ Map<String, double> _getCategoryExpenses() {
 
                       Text(
                         'Category Spending ($_selectedType)', 
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212529)),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
                       ),
                       const SizedBox(height: 12),
                       ...categoryExpenses.entries.map((entry) {
@@ -238,11 +244,15 @@ Map<String, double> _getCategoryExpenses() {
                           margin: const EdgeInsets.only(bottom: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: const BorderSide(color: Color(0xFFE9ECEF)),
+                            side: BorderSide(color: borderColor),
                           ),
+                          color: cardBg,
                           child: ListTile(
-                            title: Text(entry.key, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('${percent.toStringAsFixed(1)}% of total ${_selectedType.toLowerCase()}'), 
+                            title: Text(entry.key, style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+                            subtitle: Text(
+                              '${percent.toStringAsFixed(1)}% of total ${_selectedType.toLowerCase()}',
+                              style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade700),
+                            ), 
                             trailing: Text(
                               'Rs. ${entry.value.toStringAsFixed(2)}',
                               style: TextStyle(
