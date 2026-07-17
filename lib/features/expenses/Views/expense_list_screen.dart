@@ -117,8 +117,35 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
-        // ✨ NAVIGATION ICONS ADDED HERE!
+        // ✨ UPDATED ICONS FOR ALL PHASES
         actions: [
+          // 1. Budget Goal Icon 🎯
+          IconButton(
+            icon: const Icon(Icons.track_changes_rounded),
+            tooltip: 'Budget Goals',
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Budget Goals Phase Coming Soon! 🎯'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          ),
+          // 2. Bill Reminders Icon 🔔
+          IconButton(
+            icon: const Icon(Icons.notifications_active_outlined),
+            tooltip: 'Bill Reminders',
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Bill Reminders Phase Coming Soon! 🔔'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          ),
+          // 3. Analytics Icon 📊
           IconButton(
             icon: const Icon(Icons.bar_chart_rounded),
             tooltip: 'View Analytics',
@@ -130,6 +157,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               _refreshTransactions(); 
             },
           ),
+          // 4. Settings Icon ⚙️
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings & Profile',
