@@ -38,13 +38,15 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     });
   }
 
+  // ✨ Safe double check mapping applied here
   double get _totalBalance {
     double balance = 0.0;
     for (var tx in _transactions) {
+      final double amount = (tx['amount'] as num).toDouble(); 
       if (tx['type'] == 'Income') {
-        balance += tx['amount'];
+        balance += amount;
       } else {
-        balance -= tx['amount'];
+        balance -= amount;
       }
     }
     return balance;
@@ -53,13 +55,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   double get _totalIncome {
     return _transactions
         .where((tx) => tx['type'] == 'Income')
-        .fold(0.0, (sum, tx) => sum + tx['amount']);
+        .fold(0.0, (sum, tx) => sum + (tx['amount'] as num).toDouble());
   }
 
   double get _totalExpense {
     return _transactions
         .where((tx) => tx['type'] == 'Expense')
-        .fold(0.0, (sum, tx) => sum + tx['amount']);
+        .fold(0.0, (sum, tx) => sum + (tx['amount'] as num).toDouble());
   }
 
   Map<String, dynamic> _getCategoryStyle(String title, String type) {
@@ -120,7 +122,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // 🎯 1. Budget Goal Icon (දැන් SnackBar එක වෙනුවට BudgetScreen එකට යන්න අප්ඩේට් කරලා තියෙන්නේ!)
           IconButton(
             icon: const Icon(Icons.track_changes_rounded),
             tooltip: 'Budget Goals',
@@ -129,23 +130,20 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 context,
                 MaterialPageRoute(builder: (context) => const BudgetScreen()),
               );
-              _refreshTransactions(); // Budget screen එකෙන් ආපහු එද්දි UI එක update වෙන්න
+              _refreshTransactions(); 
             },
           ),
-          // 🔔 2. Bill Reminders Icon
           IconButton(
             icon: const Icon(Icons.notifications_active_outlined),
             tooltip: 'Bill Reminders',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Bill Reminders Phase Coming Soon! 🔔'),
-                  behavior: SnackBarBehavior.floating,
-                ),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BillReminderScreen()),
               );
+              _refreshTransactions(); 
             },
           ),
-          // 📊 3. Analytics Icon
           IconButton(
             icon: const Icon(Icons.bar_chart_rounded),
             tooltip: 'View Analytics',
@@ -157,7 +155,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               _refreshTransactions(); 
             },
           ),
-          // ⚙️ 4. Settings Icon
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings & Profile',
@@ -235,6 +232,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
   Widget _buildBalanceCard(bool isDark) {
     final isNegative = _totalBalance < 0;
+    final displayBalance = (txAmount) => (txAmount as num).toDouble().abs().toStringAsFixed(2);
 
     return Card(
       elevation: 0,
@@ -259,8 +257,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             const SizedBox(height: 8.0),
             Text(
               isNegative 
-                  ? '-Rs. ${_totalBalance.abs().toStringAsFixed(2)}' 
-                  : 'Rs. ${_totalBalance.toStringAsFixed(2)}',
+                  ? '-Rs. ${displayBalance(_totalBalance)}' 
+                  : 'Rs. ${displayBalance(_totalBalance)}',
               style: TextStyle(
                 fontSize: 34, 
                 fontWeight: FontWeight.w900, 
@@ -443,6 +441,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                     final tx = filteredList[index];
                     final isIncome = tx['type'] == 'Income';
                     final style = _getCategoryStyle(tx['title'], tx['type']);
+                    final txAmount = (tx['amount'] as num).toDouble();
 
                     return Dismissible(
                       key: Key(tx['id'].toString()), 
@@ -472,7 +471,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                       child: _buildTransactionItem(
                         title: tx['title'],
                         date: tx['date'],
-                        amount: '${isIncome ? '+' : '-'} Rs. ${tx['amount'].toStringAsFixed(2)}',
+                        amount: '${isIncome ? '+' : '-'} Rs. ${txAmount.toStringAsFixed(2)}',
                         amountColor: isIncome ? Colors.green.shade400 : Colors.red.shade400, 
                         iconColor: style['color'], 
                         icon: style['icon'], 
@@ -506,9 +505,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         PieChartSectionData(
           color: Colors.orange.shade500, 
           value: _totalExpense,
-          title: '${expensePercent.toStringAsFixed(0)}%',
-          radius: 32,
+          title: '${_totalExpense}',
           titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+          radius: 32,
         ),
     ];
   }
