@@ -179,7 +179,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                                   child: LinearProgressIndicator(
                                     value: progress,
                                     minHeight: 12,
-                                    backgroundColor: isDark ? Colors.white10 : Colors.black10,
+                                    backgroundColor: isDark ? Colors.white10 : Colors.black12,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       progress >= 0.9 ? Colors.red.shade600 : (progress >= 0.7 ? Colors.orange.shade500 : Colors.green.shade500)
                                     ),
