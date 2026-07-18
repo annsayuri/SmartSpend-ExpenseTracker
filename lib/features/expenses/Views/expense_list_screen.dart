@@ -5,6 +5,7 @@ import 'analytics_screen.dart';
 import 'package:smartspend_expensetracker/core/database/db_helper.dart';
 import 'add_transaction_screen.dart';
 import 'settings_screen.dart'; 
+import 'budget_screen.dart';
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
