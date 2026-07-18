@@ -38,7 +38,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     });
   }
 
-  // ✨ Safe double check mapping applied here
   double get _totalBalance {
     double balance = 0.0;
     for (var tx in _transactions) {
@@ -232,7 +231,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
   Widget _buildBalanceCard(bool isDark) {
     final isNegative = _totalBalance < 0;
-    final displayBalance = (txAmount) => (txAmount as num).toDouble().abs().toStringAsFixed(2);
+    final displayBalance = (double txAmount) => txAmount.abs().toStringAsFixed(2);
 
     return Card(
       elevation: 0,
@@ -255,6 +254,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               ),
             ),
             const SizedBox(height: 8.0),
+            // ✨ displayBalance call fixed perfectly here to remove blue lines
             Text(
               isNegative 
                   ? '-Rs. ${displayBalance(_totalBalance)}' 
@@ -505,7 +505,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         PieChartSectionData(
           color: Colors.orange.shade500, 
           value: _totalExpense,
-          title: '${_totalExpense}',
+          title: '${expensePercent.toStringAsFixed(0)}%', // ✨ Title syntax formatted to string percentage format safely
           titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
           radius: 32,
         ),
