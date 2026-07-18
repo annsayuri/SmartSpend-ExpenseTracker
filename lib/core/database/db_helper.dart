@@ -116,4 +116,73 @@ class DBHelper {
       );
     }
   }
+
+  // 🎯 Budget එක සේව් කරන්න හෝ අප්ඩේට් කරන්න
+  Future<int> insertOrUpdateBudget(double amount) async {
+    if (kIsWeb) {
+      // 🌐 Web Mock Logic:
+      int index = _webMockDatabase.indexWhere((element) => element['title'] == 'MONTHLY_BUDGET_LIMIT');
+      if (index != -1) {
+        _webMockDatabase[index]['amount'] = amount;
+        return 1;
+      } else {
+        _webMockDatabase.add({
+          'id': _nextWebId++,
+          'title': 'MONTHLY_BUDGET_LIMIT',
+          'amount': amount,
+          'type': 'Budget',
+          'date': '01/07/2026',
+        });
+        return 1;
+      }
+    } else {
+      // 📱 Mobile SQLite Logic:
+      final db = await database as Database;
+      List<Map<String, dynamic>> maps = await db.query(
+        'transactions',
+        where: "title = ?",
+        whereArgs: ['MONTHLY_BUDGET_LIMIT'],
+      );
+
+      if (maps.isNotEmpty) {
+        return await db.update(
+          'transactions',
+          {'amount': amount},
+          where: "title = ?",
+          whereArgs: ['MONTHLY_BUDGET_LIMIT'],
+        );
+      } else {
+        return await db.insert('transactions', {
+          'title': 'MONTHLY_BUDGET_LIMIT',
+          'amount': amount,
+          'type': 'Budget',
+          'date': '01/07/2026',
+        });
+      }
+    }
+  }
+
+  // 🎯 සේව් කරපු Budget එක අරගන්න
+  Future<double> getBudget() async {
+    if (kIsWeb) {
+      // 🌐 Web Mock Logic:
+      int index = _webMockDatabase.indexWhere((element) => element['title'] == 'MONTHLY_BUDGET_LIMIT');
+      if (index != -1) {
+        return _webMockDatabase[index]['amount'] as double;
+      }
+      return 0.0;
+    } else {
+      // 📱 Mobile SQLite Logic:
+      final db = await database as Database;
+      List<Map<String, dynamic>> maps = await db.query(
+        'transactions',
+        where: "title = ?",
+        whereArgs: ['MONTHLY_BUDGET_LIMIT'],
+      );
+      if (maps.isNotEmpty) {
+        return maps.first['amount'] as double;
+      }
+      return 0.0;
+    }
+  }
 }
