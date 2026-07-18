@@ -108,7 +108,13 @@ class _BillReminderScreenState extends State<BillReminderScreen> {
         backgroundColor: isDark ? Colors.deepPurple.shade400 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         onPressed: () {
-          // බිල්පත් එකතු කරන්න Dialog එකක් හෝ Screen එකක් පස්සේ සෙට් කරමු
+          // බිල්පත් ඇතුළත් කරන්න වෙනම Screen එකක් හදනකල් දැනට SnackBar එකක් පෙන්වමු
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Add New Bill feature coming soon! 🚀'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         },
         icon: const Icon(Icons.add_alert_rounded),
         label: const Text('Add Reminder', style: TextStyle(fontWeight: FontWeight.bold)),
