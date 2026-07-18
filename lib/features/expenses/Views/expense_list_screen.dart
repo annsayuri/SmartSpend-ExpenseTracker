@@ -5,7 +5,7 @@ import 'analytics_screen.dart';
 import 'package:smartspend_expensetracker/core/database/db_helper.dart';
 import 'add_transaction_screen.dart';
 import 'settings_screen.dart'; 
-import 'budget_screen.dart';
+import 'budget_screen.dart'; // 💡 දැනටමත් import කරලා තියෙන්නේ!
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
@@ -118,22 +118,20 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
-        // ✨ UPDATED ICONS FOR ALL PHASES
         actions: [
-          // 1. Budget Goal Icon 🎯
+          // 🎯 1. Budget Goal Icon (දැන් SnackBar එක වෙනුවට BudgetScreen එකට යන්න අප්ඩේට් කරලා තියෙන්නේ!)
           IconButton(
             icon: const Icon(Icons.track_changes_rounded),
             tooltip: 'Budget Goals',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Budget Goals Phase Coming Soon! 🎯'),
-                  behavior: SnackBarBehavior.floating,
-                ),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BudgetScreen()),
               );
+              _refreshTransactions(); // Budget screen එකෙන් ආපහු එද්දි UI එක update වෙන්න
             },
           ),
-          // 2. Bill Reminders Icon 🔔
+          // 🔔 2. Bill Reminders Icon
           IconButton(
             icon: const Icon(Icons.notifications_active_outlined),
             tooltip: 'Bill Reminders',
@@ -146,7 +144,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               );
             },
           ),
-          // 3. Analytics Icon 📊
+          // 📊 3. Analytics Icon
           IconButton(
             icon: const Icon(Icons.bar_chart_rounded),
             tooltip: 'View Analytics',
@@ -158,7 +156,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               _refreshTransactions(); 
             },
           ),
-          // 4. Settings Icon ⚙️
+          // ⚙️ 4. Settings Icon
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings & Profile',
