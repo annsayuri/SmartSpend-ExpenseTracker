@@ -439,7 +439,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               ? const Center(child: Text('No matching transactions found! 🔍', style: TextStyle(color: Colors.grey)))
               : ListView.builder(
                   itemCount: filteredList.length,
-                  itemBuilder: (context, index) {
+                  itemBuilder: (context, index) { 
                     final tx = filteredList[index];
                     final isIncome = tx['type'] == 'Income';
                     final style = _getCategoryStyle(tx['title'], tx['type']);
