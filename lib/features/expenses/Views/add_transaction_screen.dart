@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  // 👈 Dashboard එකෙන් දත්ත ටික අල්ලගන්න function එකක් constructor එකට එකතු කළා
   final Function(String title, double amount, String type) onAddTransaction;
+  
+  // 👈 සංස්කරණය කිරීමේදී පැරණි දත්ත ලබා ගැනීමට Map එකක් constructor එකට එකතු කළා
+  final Map<String, dynamic>? initialTransaction;
 
-  const AddTransactionScreen({super.key, required this.onAddTransaction});
+  const AddTransactionScreen({
+    super.key, 
+    required this.onAddTransaction,
+    this.initialTransaction, // 👈 මෙය අනිවාර්ය නැත (null විය හැක), අලුතින් ඇතුළත් කිරීමේදී මෙය හිස්ව පවතී
+  });
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -12,9 +18,27 @@ class AddTransactionScreen extends StatefulWidget {
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _amountController = TextEditingController();
+  late final TextEditingController _titleController;
+  late final TextEditingController _amountController;
   String _selectedType = 'Income';
+  bool _isEditing = false; // 👈 දැනට කරන්නේ සංස්කරණයක්ද නැද්ද යන්න හඳුනා ගැනීමට බූලියන් අගයක්
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // සංස්කරණය සඳහා දත්ත ලැබී ඇත්දැයි පරීක්ෂා කිරීම
+    if (widget.initialTransaction != null) {
+      _isEditing = true;
+      _titleController = TextEditingController(text: widget.initialTransaction!['title']);
+      _amountController = TextEditingController(text: widget.initialTransaction!['amount'].toString());
+      _selectedType = widget.initialTransaction!['type'];
+    } else {
+      // අලුතින් ඇතුළත් කරන්නේ නම් හිස්ව ආරම්භ කිරීම
+      _titleController = TextEditingController();
+      _amountController = TextEditingController();
+    }
+  }
 
   @override
   void dispose() {
@@ -27,7 +51,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Transaction'),
+        // 👈 කරන්නේ කුමන කාර්යයද යන්න මත පදනම්ව මාතෘකාව වෙනස් වේ
+        title: Text(_isEditing ? 'Edit Transaction ✏️' : 'Add Transaction 💰'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
@@ -101,20 +126,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // 🚀 ඩේටා ටික Callback එක හරහා Dashboard එකට යවනවා
+                      // 🚀 දත්ත ටික Callback එක හරහා මව් තිරය වෙත යැවීම
                       widget.onAddTransaction(
                         _titleController.text,
                         double.parse(_amountController.text),
                         _selectedType,
                       );
                       
-                      // 🔙 දත්ත ටික යවපු ගමන්ම අලුත් Screen එක වැහිලා ආපහු Dashboard එකටම යනවා
+                      // 🔙 දත්ත යැවීමෙන් පසු මෙම තිරය වසා දැමීම
                       Navigator.pop(context);
                     }
                   },
-                  child: const Text(
-                    'Add Transaction',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  // 👈 කරන්නේ කුමන කාර්යයද යන්න මත පදනම්ව බොත්තමේ අකුරු වෙනස් වේ
+                  child: Text(
+                    _isEditing ? 'Update Transaction' : 'Add Transaction',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
