@@ -101,6 +101,20 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     _refreshTransactions(); 
   }
 
+  // 👈 1. පැරණි දත්ත යාවත්කාලීන කිරීම (Update) සඳහා නව Function එකක් එකතු කළා
+  void _updateExistingTransaction(int id, String title, double amount, String type, String date) async {
+    await _dbHelper.updateTransaction({
+      'id': id,
+      'title': title,
+      'amount': amount,
+      'type': type,
+      'date': date, // පැරණි දිනය එලෙසම තබා ගනී
+    });
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    _refreshTransactions(); 
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -254,7 +268,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               ),
             ),
             const SizedBox(height: 8.0),
-            // ✨ displayBalance call fixed perfectly here to remove blue lines
             Text(
               isNegative 
                   ? '-Rs. ${displayBalance(_totalBalance)}' 
@@ -468,14 +481,38 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                           ),
                         );
                       },
-                      child: _buildTransactionItem(
-                        title: tx['title'],
-                        date: tx['date'],
-                        amount: '${isIncome ? '+' : '-'} Rs. ${txAmount.toStringAsFixed(2)}',
-                        amountColor: isIncome ? Colors.green.shade400 : Colors.red.shade400, 
-                        iconColor: style['color'], 
-                        icon: style['icon'], 
-                        isDark: isDark,
+                      // 👈 2. මෙහිදී GestureDetector එකක් මඟින් දිගු වේලාවක් එබූ විට (onLongPress) සංස්කරණය කිරීමට අවස්ථාව සලසා ඇත
+                      child: GestureDetector(
+                        onLongPress: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddTransactionScreen(
+                                initialTransaction: tx, // පැරණි දත්ත සියල්ලම යවයි
+                                onAddTransaction: (title, amount, type) {
+                                  // Update කිරීමේ function එක ක්‍රියාත්මක කරවයි
+                                  _updateExistingTransaction(
+                                    tx['id'],
+                                    title,
+                                    amount,
+                                    type,
+                                    tx['date'],
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                          _refreshTransactions();
+                        },
+                        child: _buildTransactionItem(
+                          title: tx['title'],
+                          date: tx['date'],
+                          amount: '${isIncome ? '+' : '-'} Rs. ${txAmount.toStringAsFixed(2)}',
+                          amountColor: isIncome ? Colors.green.shade400 : Colors.red.shade400, 
+                          iconColor: style['color'], 
+                          icon: style['icon'], 
+                          isDark: isDark,
+                        ),
                       ),
                     );
                   },
@@ -505,7 +542,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         PieChartSectionData(
           color: Colors.orange.shade500, 
           value: _totalExpense,
-          title: '${expensePercent.toStringAsFixed(0)}%', // ✨ Title syntax formatted to string percentage format safely
+          title: '${expensePercent.toStringAsFixed(0)}%', 
           titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
           radius: 32,
         ),
