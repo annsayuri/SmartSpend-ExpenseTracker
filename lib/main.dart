@@ -1,43 +1,46 @@
-import 'package:flutter/foundation.dart' show kIsWeb; // 👈 kIsWeb එක පාවිච්චි කරන්න
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'; // 👈 වෙබ් එක සඳහා
-import 'features/expenses/views/expense_list_screen.dart';
-import 'package:smartspend_expensetracker/core/Theme/theme_provider.dart';
-import 'package:provider/provider.dart';
+import 'features/expenses/views/expense_list_screen.dart'; // 💡 ඔයාගේ expense_list_screen එක තියෙන නිවැරදි path එක දාන්න
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+// 🌗 මුළු ඇප් එකේම Theme එක පාලනය කරන Global Notifier එක
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
-  if (kIsWeb) {
-    // 🌐 වෙබ් එක සඳහා databaseFactory එක සෙට් කිරීම
-    databaseFactory = databaseFactoryFfiWeb;
-  }
-
-  // 🌟 මෙතනින් මුළු App එකටම ThemeProvider එක සම්බන්ධ කරනවා 🌟
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeProvider(),
-      child: const SmartSpendApp(),
-    ),
-  );
+void main() {
+  runApp(const MyApp());
 }
 
-class SmartSpendApp extends StatelessWidget {
-  const SmartSpendApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 🌟 මෙතනින් දැනට තියෙන Theme එක (Light හෝ Dark) කියවලා ගන්නවා 🌟
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      theme: ThemeData.light(useMaterial3: true), // Light Theme එක
-      darkTheme: ThemeData.dark(useMaterial3: true), // Dark Theme එක
-      home: const ExpenseListScreen(), // ඔන්න අපි හදපු Screen එක මෙතනට සම්බන්ධ කළා
+    // ValueListenableBuilder මඟින් Theme එක වෙනස් වන විට මුළු ඇප් එකම Re-build කරයි
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (_, ThemeMode currentMode, __) {
+        return MaterialApp(
+          title: 'SmartSpend',
+          debugShowCheckedModeBanner: false,
+          
+          // ☀️ Light Theme එක
+          theme: ThemeData(
+            brightness: Brightness.light,
+            primarySwatch: Colors.deepPurple,
+            useMaterial3: true,
+          ),
+          
+          // 🌙 Dark Theme එක
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            primarySwatch: Colors.deepPurple,
+            useMaterial3: true,
+          ),
+          
+          // 🎛️ දැනට ක්‍රියාත්මක තේමාව
+          themeMode: currentMode,
+          
+          home: const ExpenseListScreen(),
+        );
+      },
     );
   }
-
 }
