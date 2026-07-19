@@ -7,6 +7,7 @@ import 'add_transaction_screen.dart';
 import 'settings_screen.dart'; 
 import 'budget_screen.dart'; 
 import 'bill_reminder_screen.dart';
+import 'transaction_history_screen.dart';
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
@@ -155,6 +156,17 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 MaterialPageRoute(builder: (context) => const BillReminderScreen()),
               );
               _refreshTransactions(); 
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.history_toggle_off_rounded), // Archive Icon එක
+            tooltip: 'Transaction History',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()),
+              );
+              _refreshTransactions(); // නැවත පැමිණි විට දත්ත refresh කිරීමට
             },
           ),
           IconButton(
