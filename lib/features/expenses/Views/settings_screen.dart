@@ -30,10 +30,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
-    // ❌ (මෙතන තිබුණු setState කොටස දැන් ඉවත් කර ඇත)
-
     return Scaffold(
       backgroundColor: _isDarkMode ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -46,7 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ... (කලින් තිබුණු Profile Section Card එක එලෙසමයි)
+            // 👤 Profile Section Card එක
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -64,23 +62,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Text('AS', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                     const SizedBox(height: 16.0),
+                    
+                    // Name Input Field
                     TextField(
                       controller: _nameController,
                       style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black),
                       decoration: InputDecoration(
                         labelText: 'Full Name',
-                        prefixIcon: const Icon(Icons.person_outline),
+                        // 👈 මෙතනින් Label එකේ පාට වෙනස් කළා
+                        labelStyle: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54),
+                        prefixIcon: Icon(Icons.person_outline, color: _isDarkMode ? Colors.white70 : Colors.grey),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                          borderSide: BorderSide(color: _isDarkMode ? Colors.white30 : Colors.grey.shade400),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12.0),
+                    
+                    // Email Input Field
                     TextField(
                       controller: _emailController,
                       style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black),
                       decoration: InputDecoration(
                         labelText: 'Email Address',
-                        prefixIcon: const Icon(Icons.email_outlined),
+                        // 👈 මෙතනින් Label එකේ පාට වෙනස් කළා
+                        labelStyle: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54),
+                        prefixIcon: Icon(Icons.email_outlined, color: _isDarkMode ? Colors.white70 : Colors.grey),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                          borderSide: BorderSide(color: _isDarkMode ? Colors.white30 : Colors.grey.shade400),
+                        ),
                       ),
                     ),
                   ],
@@ -89,6 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 20.0),
 
+            // ⚙️ App Preferences Section
             Text(
               'App Preferences',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _isDarkMode ? Colors.grey.shade400 : Colors.blueGrey.shade800),
@@ -104,10 +119,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: _isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
               child: Column(
                 children: [
-                  // 🌗 මෙන්න නිවැරදි කරන ලද Switch එක
+                  // 🌗 Dark Mode Toggle
                   SwitchListTile(
-                    title: const Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Toggle between light and dark theme'),
+                    // 👈 අකුරු වල පාට අඳුරු තේමාවට ගැලපෙන සේ සැකසුවා
+                    title: Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w600, color: _isDarkMode ? Colors.white : Colors.black)),
+                    subtitle: Text('Toggle between light and dark theme', style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54)),
                     secondary: Icon(
                       _isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                       color: Colors.amber.shade700,
@@ -116,18 +132,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     activeColor: Colors.deepPurple.shade400,
                     onChanged: (bool value) {
                       setState(() {
-                        _isDarkMode = value; // දැන් නිවැරදිව True/False අගය මාරු වේ!
+                        _isDarkMode = value; 
                       });
                     },
                   ),
-                  const Divider(height: 1),
+                  Divider(height: 1, color: _isDarkMode ? Colors.white10 : Colors.black12),
+
+                  // 💱 Currency Selection Dropdown
                   ListTile(
                     leading: const Icon(Icons.monetization_on_outlined, color: Colors.blue),
-                    title: const Text('Primary Currency', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(_selectedCurrency),
+                    // 👈 අකුරු වල පාට අඳුරු තේමාවට ගැලපෙන සේ සැකසුවා
+                    title: Text('Primary Currency', style: TextStyle(fontWeight: FontWeight.w600, color: _isDarkMode ? Colors.white : Colors.black)),
+                    subtitle: Text(_selectedCurrency, style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54)),
                     trailing: DropdownButton<String>(
                       value: _selectedCurrency,
+                      dropdownColor: _isDarkMode ? const Color(0xFF2C2C2C) : Colors.white,
+                      style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black, fontSize: 14),
                       underline: const SizedBox(),
+                      iconEnabledColor: _isDarkMode ? Colors.white : Colors.black,
                       items: <String>['LKR (Rs.)', 'USD (\$)', 'EUR (€)', 'GBP (£)'].map((String value) {
                         return DropdownMenuItem<String>(value: value, child: Text(value));
                       }).toList(),
@@ -138,10 +160,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                   ),
-                  const Divider(height: 1),
+                  Divider(height: 1, color: _isDarkMode ? Colors.white10 : Colors.black12),
+
+                  // 🔔 Notifications Toggle
                   SwitchListTile(
-                    title: const Text('Bill Reminders & Alerts', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Get notified for upcoming bills'),
+                    // 👈 අකුරු වල පාට අඳුරු තේමාවට ගැලපෙන සේ සැකසුවා
+                    title: Text('Bill Reminders & Alerts', style: TextStyle(fontWeight: FontWeight.w600, color: _isDarkMode ? Colors.white : Colors.black)),
+                    subtitle: Text('Get notified for upcoming bills', style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54)),
                     secondary: const Icon(Icons.notifications_active_outlined, color: Colors.green),
                     value: _notificationsEnabled,
                     activeColor: Colors.deepPurple.shade400,
@@ -153,7 +178,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 24.0),
-            
+
+            // 💾 Save Button
             SizedBox(
               width: double.infinity,
               height: 50,
