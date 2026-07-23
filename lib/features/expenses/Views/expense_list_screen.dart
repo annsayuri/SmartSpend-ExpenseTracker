@@ -142,7 +142,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             onPressed: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const BudgetScreen()),
+                MaterialPageRoute(builder: (context) => const BudgetGoalsScreen()),
               );
               _refreshTransactions(); 
             },
