@@ -73,6 +73,14 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ☀️/🌙 Dynamic Theme Colors (Light & Dark Mode Support)
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.grey : Colors.grey.shade600;
+    final inputFillColor = isDark ? const Color(0xFF121212) : const Color(0xFFF1F3F5);
+
     // 📊 Percentage & Color Logic
     double progress = _budgetLimit > 0 ? (_totalExpense / _budgetLimit) : 0.0;
     double remaining = _budgetLimit - _totalExpense;
@@ -85,11 +93,13 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
     }
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Budget Goals 🎯'),
-        backgroundColor: const Color(0xFF4A25A9),
+        title: const Text('Budget Goals 🎯', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      backgroundColor: const Color(0xFF121212),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -100,21 +110,24 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                   // 1️⃣ Monthly Budget Progress Card
                   if (_budgetLimit > 0) ...[
                     Card(
-                      color: const Color(0xFF1E1E1E),
+                      color: cardColor,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(20.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'MONTHLY BUDGET OVERVIEW',
                               style: TextStyle(
-                                color: Colors.grey,
+                                color: subTextColor,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -131,9 +144,9 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                                 ),
                                 Text(
                                   'of Rs. ${_budgetLimit.toStringAsFixed(2)}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
-                                    color: Colors.grey,
+                                    color: subTextColor,
                                   ),
                                 ),
                               ],
@@ -146,7 +159,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                               child: LinearProgressIndicator(
                                 value: progress > 1.0 ? 1.0 : progress,
                                 minHeight: 12,
-                                backgroundColor: Colors.grey[800],
+                                backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
                                 valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                               ),
                             ),
@@ -158,14 +171,14 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                               children: [
                                 Text(
                                   'Spent: ${(progress * 100).toStringAsFixed(1)}%',
-                                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                  style: TextStyle(color: subTextColor, fontSize: 13),
                                 ),
                                 Text(
                                   remaining >= 0
                                       ? 'Remaining: Rs. ${remaining.toStringAsFixed(2)}'
                                       : 'Exceeded: Rs. ${(-remaining).toStringAsFixed(2)}',
                                   style: TextStyle(
-                                    color: remaining >= 0 ? Colors.greenAccent : Colors.redAccent,
+                                    color: remaining >= 0 ? Colors.green.shade600 : Colors.redAccent,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
@@ -183,9 +196,9 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.redAccent.withOpacity(0.15),
+                          color: Colors.redAccent.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.redAccent),
+                          border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
                         ),
                         child: const Row(
                           children: [
@@ -204,9 +217,9 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.orangeAccent.withOpacity(0.15),
+                          color: Colors.orangeAccent.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.orangeAccent),
+                          border: Border.all(color: Colors.orangeAccent.withOpacity(0.5)),
                         ),
                         child: const Row(
                           children: [
@@ -226,34 +239,37 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
 
                   // 2️⃣ Set / Update Budget Input Field
                   Card(
-                    color: const Color(0xFF1E1E1E),
+                    color: cardColor,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'SET MONTHLY BUDGET LIMIT',
                             style: TextStyle(
-                              color: Colors.grey,
+                              color: subTextColor,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
                             ),
                           ),
                           const SizedBox(height: 15),
                           TextField(
                             controller: _budgetController,
                             keyboardType: TextInputType.number,
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: textColor),
                             decoration: InputDecoration(
-                              prefixIcon: const Icon(Icons.account_balance_wallet, color: Colors.grey),
+                              prefixIcon: Icon(Icons.account_balance_wallet, color: subTextColor),
                               hintText: 'Enter Budget Amount (Rs.)',
-                              hintStyle: const TextStyle(color: Colors.grey),
+                              hintStyle: TextStyle(color: subTextColor),
                               filled: true,
-                              fillColor: const Color(0xFF121212),
+                              fillColor: inputFillColor,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
@@ -266,13 +282,14 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                             height: 50,
                             child: ElevatedButton.icon(
                               onPressed: _saveBudget,
-                              icon: const Icon(Icons.save),
+                              icon: const Icon(Icons.save_rounded, color: Colors.white),
                               label: const Text(
                                 'Save Budget Limit',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6C38CC),
+                                backgroundColor: Colors.deepPurple,
+                                elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
