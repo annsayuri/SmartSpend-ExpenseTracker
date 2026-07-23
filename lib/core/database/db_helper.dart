@@ -62,17 +62,24 @@ class DBHelper {
     }
   }
 
-  // 📖 READ - සියලුම ගනුදෙනු දත්ත ලබාගැනීම
+  // 📖 READ - සියලුම ගනුදෙනු දත්ත ලබාගැනීම (Budget Record එක ඉවත් කර ඇත 🎯)
   Future<List<Map<String, dynamic>>> getAllTransactions() async {
     if (kIsWeb) {
-      // 🌐 Web Mock Logic: (id එක DESC විදිහට සෝට් කරලා දෙනවා)
-      final sortedList = List<Map<String, dynamic>>.from(_webMockDatabase);
-      sortedList.sort((a, b) => b['id'].compareTo(a['id']));
-      return sortedList;
+      // 🌐 Web Mock Logic: (MONTHLY_BUDGET_LIMIT එක හැර ඉතිරි දත්ත පමණක් id එක DESC විදිහට Sort කර දෙනවා)
+      final filteredList = _webMockDatabase
+          .where((element) => element['title'] != 'MONTHLY_BUDGET_LIMIT')
+          .toList();
+      filteredList.sort((a, b) => b['id'].compareTo(a['id']));
+      return filteredList;
     } else {
-      // 📱 Mobile SQLite:
+      // 📱 Mobile SQLite: (MONTHLY_BUDGET_LIMIT නොවන transactions පමණක් ලබා ගනී)
       final db = await database as Database;
-      return await db.query('transactions', orderBy: 'id DESC');
+      return await db.query(
+        'transactions',
+        where: "title != ?",
+        whereArgs: ['MONTHLY_BUDGET_LIMIT'],
+        orderBy: 'id DESC',
+      );
     }
   }
 
