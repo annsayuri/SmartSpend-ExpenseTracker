@@ -175,7 +175,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             onPressed: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AnalyticsScreen(initialType: 'Expense')),
+                MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
               );
               _refreshTransactions(); 
             },
@@ -354,7 +354,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const AnalyticsScreen(initialType: 'Expense')),
+                            MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
                           );
                         },
                         child: SizedBox(
@@ -376,7 +376,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const AnalyticsScreen(initialType: 'Income')),
+                                MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
                               );
                             },
                             child: _buildChartIndicator(Colors.green.shade400, 'Income ➡️', isDark),
@@ -386,7 +386,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const AnalyticsScreen(initialType: 'Expense')),
+                                MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
                               );
                             },
                             child: _buildChartIndicator(Colors.orange.shade400, 'Expense ➡️', isDark),
