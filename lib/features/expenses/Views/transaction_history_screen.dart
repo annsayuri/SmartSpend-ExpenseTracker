@@ -51,23 +51,29 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         bool matchesDate = true;
         if (_selectedDateRange != null) {
           try {
-            // අපේ Database එකේ date එක තියෙන්නේ 'dd/MM/yyyy' ආකෘතියෙන් නිසා එය Parse කරගන්නවා
             DateTime txDate = DateFormat('dd/MM/yyyy').parse(tx['date']);
-            
-            // සසඳන දිනයන්හි ආරම්භය සහ අවසානය නිවැරදිව පරීක්ෂා කිරීම
             final startDate = DateTime(_selectedDateRange!.start.year, _selectedDateRange!.start.month, _selectedDateRange!.start.day);
             final endDate = DateTime(_selectedDateRange!.end.year, _selectedDateRange!.end.month, _selectedDateRange!.end.day, 23, 59, 59);
 
             matchesDate = txDate.isAfter(startDate.subtract(const Duration(days: 1))) && 
                           txDate.isBefore(endDate.add(const Duration(days: 1)));
           } catch (e) {
-            matchesDate = true; // Parse error එකක් ආවොත් skip කරනවා
+            matchesDate = true;
           }
         }
 
         return matchesSearch && matchesType && matchesDate;
       }).toList();
     });
+  }
+
+  // 🗑️ Transaction එක Delete කිරීමේ Function එක
+  void _deleteTransaction(int id) async {
+    await _dbHelper.deleteTransaction(id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Transaction deleted successfully! 🗑️'), backgroundColor: Colors.redAccent),
+    );
+    _loadAllTransactions();
   }
 
   // Category Icon සහ පැහැය තීරණය කිරීම
@@ -95,7 +101,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     }
   }
 
-  // Date Range Picker එක පෙන්වන ක්‍රමය
+  // Date Range Picker
   void _pickDateRange() async {
     final DateTimeRange? newRange = await showDateRangePicker(
       context: context,
@@ -123,7 +129,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     }
   }
 
-  // Filters Clear කරන Function එක
+  // Filters Clear කිරීම
   void _clearFilters() {
     setState(() {
       _searchQuery = '';
@@ -157,7 +163,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  // 🔍 Search Bar එක
+                  // 🔍 Search Bar
                   TextField(
                     onChanged: (value) {
                       _searchQuery = value;
@@ -177,10 +183,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                   ),
                   const SizedBox(height: 12.0),
 
-                  // 🎛️ Filter Buttons (Type & Date Range)
+                  // 🎛️ Filter Buttons
                   Row(
                     children: [
-                      // Type Choice Chips
                       Expanded(
                         child: Row(
                           children: ['All', 'Income', 'Expense'].map((type) {
@@ -202,8 +207,6 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                           }).toList(),
                         ),
                       ),
-                      
-                      // Date Picker Button
                       OutlinedButton.icon(
                         onPressed: _pickDateRange,
                         icon: const Icon(Icons.date_range_rounded, size: 16),
@@ -221,7 +224,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                   ),
                   const SizedBox(height: 16.0),
 
-                  // 🧾 Transactions ලැයිස්තුව
+                  // 🧾 Transactions ලැයිස්තුව (Swipe to Delete සමඟ)
                   Expanded(
                     child: _filteredTransactions.isEmpty
                         ? const Center(
@@ -238,30 +241,47 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                               final style = _getCategoryStyle(tx['title'], tx['type']);
                               final double txAmount = (tx['amount'] as num).toDouble();
 
-                              return Card(
-                                elevation: 0,
-                                margin: const EdgeInsets.only(bottom: 10.0),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16.0),
-                                  side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+                              return Dismissible(
+                                key: Key(tx['id'].toString()),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 20.0),
+                                  margin: const EdgeInsets.only(bottom: 10.0),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent,
+                                    borderRadius: BorderRadius.circular(16.0),
+                                  ),
+                                  child: const Icon(Icons.delete_forever_rounded, color: Colors.white, size: 28),
                                 ),
-                                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: style['color'].withOpacity(0.1),
-                                    child: Icon(style['icon'], color: style['color']),
+                                onDismissed: (direction) {
+                                  _deleteTransaction(tx['id']);
+                                },
+                                child: Card(
+                                  elevation: 0,
+                                  margin: const EdgeInsets.only(bottom: 10.0),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16.0),
+                                    side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
                                   ),
-                                  title: Text(
-                                    tx['title'],
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  subtitle: Text(tx['date']),
-                                  trailing: Text(
-                                    '${isIncome ? '+' : '-'} Rs. ${txAmount.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: isIncome ? Colors.green.shade600 : Colors.red.shade600,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
+                                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: style['color'].withOpacity(0.1),
+                                      child: Icon(style['icon'], color: style['color']),
+                                    ),
+                                    title: Text(
+                                      tx['title'],
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    subtitle: Text(tx['date']),
+                                    trailing: Text(
+                                      '${isIncome ? '+' : '-'} Rs. ${txAmount.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: isIncome ? Colors.green.shade600 : Colors.red.shade600,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
                                     ),
                                   ),
                                 ),
