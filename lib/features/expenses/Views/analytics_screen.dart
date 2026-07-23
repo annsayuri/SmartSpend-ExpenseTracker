@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:smartspend_expensetracker/core/database/db_helper.dart';
+import '../../../core/database/db_helper.dart';
 
 class AnalyticsScreen extends StatefulWidget {
-  final String initialType;
-
-  const AnalyticsScreen({super.key, this.initialType = 'Expense'}); 
+  const AnalyticsScreen({Key? key}) : super(key: key);
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -13,112 +11,87 @@ class AnalyticsScreen extends StatefulWidget {
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   final DBHelper _dbHelper = DBHelper();
-  List<Map<String, dynamic>> _transactions = [];
+  
   bool _isLoading = true;
-  String _selectedPeriod = 'Weekly'; // 'Weekly' ho 'Monthly'
-  String _selectedType = 'Expense';
+  bool _isWeekly = true; // Weekly or Monthly Filter Toggle
+  
+  Map<String, double> _categoryData = {
+    'Food': 0.0,
+    'Transport': 0.0,
+    'Medical': 0.0,
+    'Bills': 0.0,
+    'Salary': 0.0,
+    'Other': 0.0,
+  };
+
+  double _totalExpense = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _selectedType = widget.initialType; 
-    _fetchData();
+    _loadAnalyticsData();
   }
 
-  @override
-  void didUpdateWidget(covariant AnalyticsScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.initialType != oldWidget.initialType) {
-      setState(() {
-        _selectedType = widget.initialType;
-      });
-      _fetchData(); 
-    }
-  }
+  // 🔄 DB එකෙන් Expense දත්ත අරන් Categories වලට බෙදාගැනීම
+  Future<void> _loadAnalyticsData() async {
+    setState(() => _isLoading = true);
 
-  void _fetchData() async {
-    setState(() {
-      _isLoading = true;
-    });
-    final data = await _dbHelper.getAllTransactions();
-    if (!mounted) return;
-    setState(() {
-      _transactions = data;
-      _isLoading = false;
-    });
-  }
-
-  Map<String, double> _getCategoryExpenses() {
-    Map<String, double> categoryMap = {
+    List<Map<String, dynamic>> allTx = await _dbHelper.getAllTransactions();
+    Map<String, double> tempCategoryMap = {
       'Food': 0.0,
       'Transport': 0.0,
       'Medical': 0.0,
       'Bills': 0.0,
-      'Salary/Allowance': 0.0, 
+      'Salary': 0.0,
       'Other': 0.0,
     };
 
-    for (var tx in _transactions) {
-      if (tx['type'] == _selectedType) { 
-        String title = (tx['title'] ?? '').toString().toLowerCase();
-        String categoryField = (tx['category'] ?? '').toString().toLowerCase();
-        double amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-        
-        String category = 'Other';
-        
-        if (title.contains('bus') || title.contains('car') || title.contains('transport') ||
-            title.contains('train') || categoryField.contains('transport')) {
-          category = 'Transport';
-        } 
-        else if (title.contains('food') || title.contains('eat') || title.contains('kottu') ||
-                 categoryField.contains('food')) {
-          category = 'Food';
-        } 
-        else if (title.contains('medical') || title.contains('medicine') || title.contains('doctor') || 
-                 title.contains('hospital') || title.contains('clinic') || title.contains('pharmacy') ||
-                 title.contains('health') || categoryField.contains('medical')) {
-          category = 'Medical';
-        } 
-        else if (title.contains('bill') || title.contains('electric') || title.contains('water') ||
-                 categoryField.contains('bill')) {
-          category = 'Bills';
-        } 
-        else if (title.contains('salary') || title.contains('padi') || title.contains('allowance') ||
-                 categoryField.contains('income')) {
-          category = 'Salary/Allowance';
-        }
-        else {
-          print("Uncategorized Item Found: $title"); 
-        }
+    double total = 0.0;
 
-        categoryMap[category] = (categoryMap[category] ?? 0.0) + amount;
+    for (var tx in allTx) {
+      if (tx['type'] == 'Expense') {
+        double amount = (tx['amount'] as num).toDouble();
+        String title = (tx['title'] as String).toLowerCase();
+        
+        total += amount;
+
+        // Simple Categorization Logic based on Title keywords
+        if (title.contains('food') || title.contains('eat') || title.contains('rice') || title.contains('lunch')) {
+          tempCategoryMap['Food'] = (tempCategoryMap['Food'] ?? 0) + amount;
+        } else if (title.contains('bus') || title.contains('train') || title.contains('fuel') || title.contains('transport') || title.contains('cab')) {
+          tempCategoryMap['Transport'] = (tempCategoryMap['Transport'] ?? 0) + amount;
+        } else if (title.contains('doctor') || title.contains('medicine') || title.contains('medical') || title.contains('hospital')) {
+          tempCategoryMap['Medical'] = (tempCategoryMap['Medical'] ?? 0) + amount;
+        } else if (title.contains('bill') || title.contains('electricity') || title.contains('water') || title.contains('broadband') || title.contains('dialog')) {
+          tempCategoryMap['Bills'] = (tempCategoryMap['Bills'] ?? 0) + amount;
+        } else {
+          tempCategoryMap['Other'] = (tempCategoryMap['Other'] ?? 0) + amount;
+        }
       }
     }
-    return categoryMap;
+
+    setState(() {
+      _categoryData = tempCategoryMap;
+      _totalExpense = total;
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // 🌙 Dark Mode එක On ද කියලා Check කරනවා
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA);
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.grey : Colors.grey.shade600;
 
-    final categoryExpenses = _getCategoryExpenses();
-    final totalExpense = categoryExpenses.values.fold(0.0, (sum, item) => sum + item);
-
-    final isExpense = _selectedType == 'Expense';
-    final themeColor = isExpense ? Colors.red.shade400 : Colors.green.shade500;
-
-    // 🎨 Dynamic Colors (Mode එක අනුව මාරු වෙනවා)
-    final scaffoldBg = isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA);
-    final cardBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF212529);
-    final borderColor = isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE9ECEF);
+    final List<String> categories = _categoryData.keys.toList();
 
     return Scaffold(
-      backgroundColor: scaffoldBg,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: Text('Advanced Analytics ($_selectedType) 📊', style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: isExpense ? Colors.deepPurple.shade700 : Colors.teal.shade700,
+        title: const Text('Advanced Analytics 📊', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -126,166 +99,218 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
-              child: Center(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1️⃣ Header Toggle (Weekly / Monthly)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Text(
+                        'EXPENSE BREAKDOWN',
+                        style: TextStyle(
+                          color: subTextColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+                        ),
+                        child: Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => setState(() => _isWeekly = true),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _isWeekly ? Colors.deepPurple : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  'Weekly',
+                                  style: TextStyle(
+                                    color: _isWeekly ? Colors.white : subTextColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => setState(() => _isWeekly = false),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: !_isWeekly ? Colors.deepPurple : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  'Monthly',
+                                  style: TextStyle(
+                                    color: !_isWeekly ? Colors.white : subTextColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 2️⃣ Bar Chart Card
+                  Card(
+                    color: cardColor,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '$_selectedType Breakdown', 
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+                            'Expense Overview (Rs.)',
+                            style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.bold),
                           ),
-                          SegmentedButton<String>(
-                            segments: const [
-                              ButtonSegment(value: 'Weekly', label: Text('Weekly')),
-                              ButtonSegment(value: 'Monthly', label: Text('Monthly')),
-                            ],
-                            selected: {_selectedPeriod},
-                            onSelectionChanged: (Set<String> newSelection) {
-                              setState(() {
-                                _selectedPeriod = newSelection.first;
-                              });
-                            },
-                            style: SegmentedButton.styleFrom(
-                              selectedBackgroundColor: isExpense ? Colors.deepPurple.shade100 : Colors.teal.shade100,
-                              selectedForegroundColor: isExpense ? Colors.deepPurple.shade800 : Colors.teal.shade800,
+                          const SizedBox(height: 25),
+                          SizedBox(
+                            height: 220,
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: (_totalExpense > 0 ? _totalExpense * 1.2 : 1000),
+                                barTouchData: BarTouchData(enabled: true),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (double value, TitleMeta meta) {
+                                        int index = value.toInt();
+                                        if (index >= 0 && index < categories.length) {
+                                          return Padding(
+                                            padding: const EdgeInsets.only(top: 8.0),
+                                            child: Text(
+                                              categories[index],
+                                              style: TextStyle(
+                                                color: subTextColor,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return const Text('');
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                gridData: const FlGridData(show: false),
+                                borderData: FlBorderData(show: false),
+                                barGroups: List.generate(categories.length, (index) {
+                                  double val = _categoryData[categories[index]] ?? 0.0;
+                                  return BarChartGroupData(
+                                    x: index,
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: val,
+                                        color: Colors.orangeAccent,
+                                        width: 18,
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(6),
+                                          topRight: Radius.circular(6),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
-                      Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20.0),
-                          side: BorderSide(color: borderColor),
-                        ),
-                        color: cardBg,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '$_selectedType Overview (Rs.)', 
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey),
-                              ),
-                              const SizedBox(height: 30),
-                              SizedBox(
-                                height: 250,
-                                child: BarChart(
-                                  BarChartData(
-                                    alignment: BarChartAlignment.spaceAround,
-                                    maxY: totalExpense == 0 ? 1000 : totalExpense * 1.2,
-                                    barTouchData: BarTouchData(enabled: true),
-                                    titlesData: FlTitlesData(
-                                      show: true,
-                                      bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          getTitlesWidget: (double value, TitleMeta meta) {
-                                            // 📊 Chart එක යට තියෙන Category අකුරු වල පාටත් Dark Mode එකට ගැලපෙන්න හැදුවා
-                                            final style = TextStyle(
-                                              color: isDark ? Colors.grey.shade400 : Colors.blueGrey, 
-                                              fontWeight: FontWeight.bold, 
-                                              fontSize: 11
-                                            );
-                                            switch (value.toInt()) {
-                                              case 0: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Food', style: style));
-                                              case 1: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Transport', style: style));
-                                              case 2: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Medical', style: style));
-                                              case 3: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Bills', style: style));
-                                              case 4: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Salary', style: style));
-                                              case 5: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('Other', style: style));
-                                              default: return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text('', style: style));
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                    ),
-                                    gridData: const FlGridData(show: false),
-                                    borderData: FlBorderData(show: false),
-                                    barGroups: [
-                                      _makeBarGroup(0, categoryExpenses['Food'] ?? 0, Colors.red.shade400),
-                                      _makeBarGroup(1, categoryExpenses['Transport'] ?? 0, Colors.orange.shade600),
-                                      _makeBarGroup(2, categoryExpenses['Medical'] ?? 0, Colors.teal.shade600),
-                                      _makeBarGroup(3, categoryExpenses['Bills'] ?? 0, Colors.blue.shade600),
-                                      _makeBarGroup(4, categoryExpenses['Salary/Allowance'] ?? 0, Colors.green.shade600),
-                                      _makeBarGroup(5, categoryExpenses['Other'] ?? 0, Colors.amber.shade700),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                  // 3️⃣ Category Spending List Title
+                  Text(
+                    'CATEGORY SPENDING (EXPENSE)',
+                    style: TextStyle(
+                      color: subTextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 4️⃣ Category Cards
+                  if (_totalExpense == 0)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Text(
+                          'No expense records found to show analytics! 📉',
+                          style: TextStyle(color: subTextColor),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                    )
+                  else
+                    Column(
+                      children: categories.map((category) {
+                        double amount = _categoryData[category] ?? 0.0;
+                        if (amount == 0) return const SizedBox.shrink(); // Spend නොකරපු Categories hide කරනවා
 
-                      Text(
-                        'Category Spending ($_selectedType)', 
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
-                      ),
-                      const SizedBox(height: 12),
-                      ...categoryExpenses.entries.map((entry) {
-                        final percent = totalExpense > 0 ? (entry.value / totalExpense) * 100 : 0.0;
-                        if (entry.value == 0 && totalExpense > 0) return const SizedBox.shrink();
+                        double percentage = (_totalExpense > 0) ? (amount / _totalExpense) * 100 : 0.0;
 
                         return Card(
+                          color: cardColor,
                           elevation: 0,
                           margin: const EdgeInsets.only(bottom: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: borderColor),
+                            side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
                           ),
-                          color: cardBg,
                           child: ListTile(
-                            title: Text(entry.key, style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            title: Text(
+                              category,
+                              style: TextStyle(fontWeight: FontWeight.bold, color: textColor, fontSize: 15),
+                            ),
                             subtitle: Text(
-                              '${percent.toStringAsFixed(1)}% of total ${_selectedType.toLowerCase()}',
-                              style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade700),
-                            ), 
+                              '${percentage.toStringAsFixed(1)}% of total expense',
+                              style: TextStyle(color: subTextColor, fontSize: 12),
+                            ),
                             trailing: Text(
-                              'Rs. ${entry.value.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold, 
-                                color: themeColor, 
-                                fontSize: 15
+                              'Rs. ${amount.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
                               ),
                             ),
                           ),
                         );
-                      }),
-                    ],
-                  ),
-                ),
+                      }).toList(),
+                    ),
+                ],
               ),
             ),
-    );
-  }
-
-  BarChartGroupData _makeBarGroup(int x, double y, Color color) {
-    return BarChartGroupData(
-      x: x,
-      barRods: [
-        BarChartRodData(
-          toY: y,
-          color: color,
-          width: 22,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(6),
-            topRight: Radius.circular(6),
-          ),
-        ),
-      ],
     );
   }
 }
