@@ -20,7 +20,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     'Transport': 0.0,
     'Medical': 0.0,
     'Bills': 0.0,
-    'Salary': 0.0,
     'Other': 0.0,
   };
 
@@ -42,7 +41,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       'Transport': 0.0,
       'Medical': 0.0,
       'Bills': 0.0,
-      'Salary': 0.0,
       'Other': 0.0,
     };
 
