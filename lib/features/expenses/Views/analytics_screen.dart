@@ -31,11 +31,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     _loadAnalyticsData();
   }
 
-  // 🔄 DB එකෙන් Expense දත්ත අරන් Categories වලට බෙදාගැනීම
+  // 🔄 DB එකෙන් Expense දත්ත අරන් Date Filter එක අනුව බෙදාගැනීම
   Future<void> _loadAnalyticsData() async {
     setState(() => _isLoading = true);
 
     List<Map<String, dynamic>> allTx = await _dbHelper.getAllTransactions();
+    
     Map<String, double> tempCategoryMap = {
       'Food': 0.0,
       'Transport': 0.0,
@@ -45,25 +46,46 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     };
 
     double total = 0.0;
+    DateTime now = DateTime.now();
 
     for (var tx in allTx) {
       if (tx['type'] == 'Expense') {
-        double amount = (tx['amount'] as num).toDouble();
-        String title = (tx['title'] as String).toLowerCase();
-        
-        total += amount;
+        // Date parse කරගැනීම
+        DateTime txDate = DateTime.parse(tx['date']);
 
-        // Simple Categorization Logic based on Title keywords
-        if (title.contains('food') || title.contains('eat') || title.contains('rice') || title.contains('lunch')) {
-          tempCategoryMap['Food'] = (tempCategoryMap['Food'] ?? 0) + amount;
-        } else if (title.contains('bus') || title.contains('train') || title.contains('fuel') || title.contains('transport') || title.contains('cab')) {
-          tempCategoryMap['Transport'] = (tempCategoryMap['Transport'] ?? 0) + amount;
-        } else if (title.contains('doctor') || title.contains('medicine') || title.contains('medical') || title.contains('hospital')) {
-          tempCategoryMap['Medical'] = (tempCategoryMap['Medical'] ?? 0) + amount;
-        } else if (title.contains('bill') || title.contains('electricity') || title.contains('water') || title.contains('broadband') || title.contains('dialog')) {
-          tempCategoryMap['Bills'] = (tempCategoryMap['Bills'] ?? 0) + amount;
+        // 📅 Filter Logic Check
+        bool includeTx = false;
+        if (_isWeekly) {
+          // පහුගිය දවස් 7 ඇතුළත Transactions විතරක් ගන්න
+          Duration difference = now.difference(txDate);
+          if (difference.inDays <= 7 && difference.inDays >= 0) {
+            includeTx = true;
+          }
         } else {
-          tempCategoryMap['Other'] = (tempCategoryMap['Other'] ?? 0) + amount;
+          // මේ මාසේ (Current Month & Year) Transactions විතරක් ගන්න
+          if (txDate.month == now.month && txDate.year == now.year) {
+            includeTx = true;
+          }
+        }
+
+        if (includeTx) {
+          double amount = (tx['amount'] as num).toDouble();
+          String title = (tx['title'] as String).toLowerCase();
+          
+          total += amount;
+
+          // Categorization Logic based on Title keywords
+          if (title.contains('food') || title.contains('eat') || title.contains('rice') || title.contains('lunch')) {
+            tempCategoryMap['Food'] = (tempCategoryMap['Food'] ?? 0) + amount;
+          } else if (title.contains('bus') || title.contains('train') || title.contains('fuel') || title.contains('transport') || title.contains('cab')) {
+            tempCategoryMap['Transport'] = (tempCategoryMap['Transport'] ?? 0) + amount;
+          } else if (title.contains('doctor') || title.contains('medicine') || title.contains('medical') || title.contains('hospital')) {
+            tempCategoryMap['Medical'] = (tempCategoryMap['Medical'] ?? 0) + amount;
+          } else if (title.contains('bill') || title.contains('electricity') || title.contains('water') || title.contains('broadband') || title.contains('dialog')) {
+            tempCategoryMap['Bills'] = (tempCategoryMap['Bills'] ?? 0) + amount;
+          } else {
+            tempCategoryMap['Other'] = (tempCategoryMap['Other'] ?? 0) + amount;
+          }
         }
       }
     }
@@ -105,7 +127,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'EXPENSE BREAKDOWN',
+                        _isWeekly ? 'LAST 7 DAYS EXPENSES' : 'THIS MONTH EXPENSES',
                         style: TextStyle(
                           color: subTextColor,
                           fontSize: 12,
@@ -122,7 +144,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         child: Row(
                           children: [
                             GestureDetector(
-                              onTap: () => setState(() => _isWeekly = true),
+                              onTap: () {
+                                if (!_isWeekly) {
+                                  setState(() => _isWeekly = true);
+                                  _loadAnalyticsData(); // Data re-load වෙනවා
+                                }
+                              },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
@@ -140,7 +167,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () => setState(() => _isWeekly = false),
+                              onTap: () {
+                                if (_isWeekly) {
+                                  setState(() => _isWeekly = false);
+                                  _loadAnalyticsData(); // Data re-load වෙනවා
+                                }
+                              },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
@@ -177,9 +209,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Expense Overview (Rs.)',
-                            style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.bold),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Expense Overview',
+                                style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'Total: Rs. ${_totalExpense.toStringAsFixed(2)}',
+                                style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 25),
                           SizedBox(
@@ -263,7 +304,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(20.0),
                         child: Text(
-                          'No expense records found to show analytics! 📉',
+                          'No expense records found for this period! 📉',
                           style: TextStyle(color: subTextColor),
                         ),
                       ),
@@ -272,7 +313,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     Column(
                       children: categories.map((category) {
                         double amount = _categoryData[category] ?? 0.0;
-                        if (amount == 0) return const SizedBox.shrink(); // Spend නොකරපු Categories hide කරනවා
+                        if (amount == 0) return const SizedBox.shrink();
 
                         double percentage = (_totalExpense > 0) ? (amount / _totalExpense) * 100 : 0.0;
 
