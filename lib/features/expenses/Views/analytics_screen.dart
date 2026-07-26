@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/database/db_helper.dart';
+import '../../../core/services/export_service.dart'; // 📄 Export Service එක import කර ඇත
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({Key? key}) : super(key: key);
@@ -13,11 +14,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   final DBHelper _dbHelper = DBHelper();
   
   bool _isLoading = true;
-  bool _isWeekly = true; // Weekly or Monthly Filter Toggle
-  bool _isExpenseMode = true; // Expense vs Income Toggle 📊
+  bool _isWeekly = true;
+  bool _isExpenseMode = true;
 
   Map<String, double> _categoryData = {};
   double _totalAmount = 0.0;
+  List<Map<String, dynamic>> _rawTransactions = []; // PDF/CSV export සඳහා raw data
 
   @override
   void initState() {
@@ -25,11 +27,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     _loadAnalyticsData();
   }
 
-  // 🔄 DB එකෙන් දත්ත අරන් Expense/Income සහ Date Filter අනුව බෙදාගැනීම
   Future<void> _loadAnalyticsData() async {
     setState(() => _isLoading = true);
 
     List<Map<String, dynamic>> allTx = await _dbHelper.getAllTransactions();
+    _rawTransactions = allTx; // Export කිරීම සඳහා data збереගැනීම
     
     Map<String, double> tempCategoryMap = _isExpenseMode
         ? {
@@ -53,7 +55,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     for (var tx in allTx) {
       if (tx['type'] == targetType) {
-        // 📅 DD/MM/YYYY Format එක parse කරගැනීම සඳහා safe logic එක
         DateTime txDate;
         try {
           List<String> parts = tx['date'].toString().split('/');
@@ -69,7 +70,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           txDate = DateTime.now();
         }
 
-        // 📅 Filter Logic Check
         bool includeTx = false;
         if (_isWeekly) {
           Duration difference = now.difference(txDate);
@@ -89,7 +89,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           total += amount;
 
           if (_isExpenseMode) {
-            // Expense Categorization
             if (title.contains('food') || title.contains('eat') || title.contains('rice') || title.contains('lunch')) {
               tempCategoryMap['Food'] = (tempCategoryMap['Food'] ?? 0) + amount;
             } else if (title.contains('bus') || title.contains('train') || title.contains('fuel') || title.contains('transport') || title.contains('cab')) {
@@ -102,7 +101,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               tempCategoryMap['Other'] = (tempCategoryMap['Other'] ?? 0) + amount;
             }
           } else {
-            // Income Categorization
             if (title.contains('salary') || title.contains('pay') || title.contains('wage')) {
               tempCategoryMap['Salary'] = (tempCategoryMap['Salary'] ?? 0) + amount;
             } else if (title.contains('business') || title.contains('profit') || title.contains('sale')) {
@@ -126,6 +124,60 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     });
   }
 
+  // 📥 Export Options Modal Sheet Dialog
+  void _showExportOptions(BuildContext context) {
+    if (_rawTransactions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No transactions available to export!')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Export Transactions 📄',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf, color: Colors.redAccent, size: 30),
+                title: const Text('Export as PDF Document', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Download or print formatted PDF report'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ExportService.exportToPDF(_rawTransactions);
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.table_chart, color: Colors.green, size: 30),
+                title: const Text('Export as CSV Spreadsheet', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Compatible with Microsoft Excel & Google Sheets'),
+                onTap: () {
+                  Navigator.pop(context);
+                  String csvData = ExportService.generateCSV(_rawTransactions);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('CSV Report Generated Successfully!')),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -144,6 +196,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          // 📥 Download Icon එක AppBar එකේ දකුණු පසට එකතු කර ඇත
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: 'Export PDF / CSV',
+            onPressed: () => _showExportOptions(context),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -152,7 +212,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 0️⃣ Expense / Income Main Toggle
+                  // Expenses / Income Main Toggle
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(4),
@@ -223,7 +283,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 1️⃣ Header Toggle (Weekly / Monthly)
+                  // Header Toggle (Weekly / Monthly)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -299,7 +359,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 2️⃣ Bar Chart Card
+                  // Bar Chart Card
                   Card(
                     color: cardColor,
                     elevation: 0,
@@ -389,7 +449,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // 3️⃣ Category Breakdown List Title
+                  // Category Breakdown List Title
                   Text(
                     _isExpenseMode ? 'CATEGORY SPENDING (EXPENSE)' : 'INCOME SOURCES',
                     style: TextStyle(
@@ -401,7 +461,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // 4️⃣ Category Cards
+                  // Category Cards
                   if (_totalAmount == 0)
                     Center(
                       child: Padding(
