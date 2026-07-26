@@ -11,6 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # 📄 PDF සහ CSV සඳහා අලුතෙන් එකතු කරන Packages:
+  pdf: ^3.10.8
+  printing: ^5.13.1
+  csv: ^6.0.0
+
   cupertino_icons: ^1.0.8
   sqflite: ^2.4.0
   path: ^1.9.0
@@ -26,7 +31,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  
 
   flutter_lints: ^6.0.0
 
