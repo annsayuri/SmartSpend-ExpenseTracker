@@ -1,24 +1,27 @@
-import 'package:csv/csv.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:csv/csv.dart';
 
 class ExportService {
-  // 📄 1. Export Transactions as PDF Report
+  // 📄 Export Data to PDF
   static Future<void> exportToPDF(List<Map<String, dynamic>> transactions) async {
     final pdf = pw.Document();
 
+    // Calculate Summary Data
     double totalIncome = 0.0;
     double totalExpense = 0.0;
 
     for (var tx in transactions) {
-      double amt = (tx['amount'] as num).toDouble();
-      if (tx['type'] == 'Expense') {
-        totalExpense += amt;
+      double amount = (tx['amount'] as num).toDouble();
+      if (tx['type'] == 'Income') {
+        totalIncome += amount;
       } else {
-        totalIncome += amt;
+        totalExpense += amount;
       }
     }
+
+    double netBalance = totalIncome - totalExpense;
 
     pdf.addPage(
       pw.MultiPage(
@@ -26,16 +29,20 @@ class ExportService {
         margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
           return [
-            // Title Header
+            // Header Section
             pw.Header(
               level: 0,
               child: pw.Row(
-                mainpw: pw.MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('SmartSpend Financial Report',
-                      style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
-                  pw.Text(DateTime.now().toString().split(' ')[0],
-                      style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
+                  pw.Text(
+                    'SmartSpend Financial Report',
+                    style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.Text(
+                    DateTime.now().toString().split(' ')[0],
+                    style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
+                  ),
                 ],
               ),
             ),
@@ -43,7 +50,7 @@ class ExportService {
 
             // Summary Cards
             pw.Row(
-              mainpw: pw.MainAxisAlignment.spaceAround,
+              mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
               children: [
                 pw.Container(
                   padding: const pw.EdgeInsets.all(10),
@@ -51,8 +58,10 @@ class ExportService {
                   child: pw.Column(
                     children: [
                       pw.Text('Total Income', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-                      pw.Text('Rs. ${totalIncome.toStringAsFixed(2)}',
-                          style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.green)),
+                      pw.Text(
+                        'Rs. ${totalIncome.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.green),
+                      ),
                     ],
                   ),
                 ),
@@ -62,8 +71,10 @@ class ExportService {
                   child: pw.Column(
                     children: [
                       pw.Text('Total Expense', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-                      pw.Text('Rs. ${totalExpense.toStringAsFixed(2)}',
-                          style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.red)),
+                      pw.Text(
+                        'Rs. ${totalExpense.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.red),
+                      ),
                     ],
                   ),
                 ),
@@ -73,8 +84,10 @@ class ExportService {
                   child: pw.Column(
                     children: [
                       pw.Text('Net Balance', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-                      pw.Text('Rs. ${(totalIncome - totalExpense).toStringAsFixed(2)}',
-                          style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blue)),
+                      pw.Text(
+                        'Rs. ${netBalance.toStringAsFixed(2)}',
+                        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blue),
+                      ),
                     ],
                   ),
                 ),
@@ -82,49 +95,51 @@ class ExportService {
             ),
             pw.SizedBox(height: 20),
 
-            // Transactions Table
-            pw.Table.fromTextArray(
-              headers: ['ID', 'Title', 'Type', 'Amount (Rs.)', 'Date'],
+            // Transactions Table Title
+            pw.Text('Transaction Details', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 10),
+
+            // Table Data
+            pw.TableHelper.fromTextArray(
+              headers: ['Title', 'Type', 'Amount (Rs.)', 'Date'],
               data: transactions.map((tx) {
                 return [
-                  tx['id'].toString(),
                   tx['title'].toString(),
                   tx['type'].toString(),
-                  (tx['amount'] as num).toDouble().toStringAsFixed(2),
+                  (tx['amount'] as num).toStringAsFixed(2),
                   tx['date'].toString(),
                 ];
               }).toList(),
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
               headerDecoration: const pw.BoxDecoration(color: PdfColors.deepPurple),
               cellAlignment: pw.Alignment.centerLeft,
-              rowDecoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.5))),
+              cellPadding: const pw.EdgeInsets.all(6),
             ),
           ];
         },
       ),
     );
 
-    // BROWSER / DEVICE PRINT PREVIEW OR SAVE
+    // Layout and share / print PDF
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'SmartSpend_Report_${DateTime.now().millisecondsSinceEpoch}.pdf',
     );
   }
 
-  // 📊 2. Export Transactions as CSV File
+  // 📊 Generate CSV Format Data
   static String generateCSV(List<Map<String, dynamic>> transactions) {
     List<List<dynamic>> rows = [];
 
-    // Header Row
-    rows.add(["ID", "Title", "Type", "Amount", "Date"]);
+    // Add CSV Headers
+    rows.add(["ID", "Title", "Amount", "Type", "Date"]);
 
-    // Data Rows
+    // Add Data Rows
     for (var tx in transactions) {
       rows.add([
         tx['id'],
         tx['title'],
-        tx['type'],
         tx['amount'],
+        tx['type'],
         tx['date'],
       ]);
     }
