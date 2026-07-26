@@ -14,16 +14,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   
   bool _isLoading = true;
   bool _isWeekly = true; // Weekly or Monthly Filter Toggle
-  
-  Map<String, double> _categoryData = {
-    'Food': 0.0,
-    'Transport': 0.0,
-    'Medical': 0.0,
-    'Bills': 0.0,
-    'Other': 0.0,
-  };
+  bool _isExpenseMode = true; // Expense vs Income Toggle 📊
 
-  double _totalExpense = 0.0;
+  Map<String, double> _categoryData = {};
+  double _totalAmount = 0.0;
 
   @override
   void initState() {
@@ -31,25 +25,34 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     _loadAnalyticsData();
   }
 
-  // 🔄 DB එකෙන් Expense දත්ත අරන් Date Filter එක අනුව බෙදාගැනීම
+  // 🔄 DB එකෙන් දත්ත අරන් Expense/Income සහ Date Filter අනුව බෙදාගැනීම
   Future<void> _loadAnalyticsData() async {
     setState(() => _isLoading = true);
 
     List<Map<String, dynamic>> allTx = await _dbHelper.getAllTransactions();
     
-    Map<String, double> tempCategoryMap = {
-      'Food': 0.0,
-      'Transport': 0.0,
-      'Medical': 0.0,
-      'Bills': 0.0,
-      'Other': 0.0,
-    };
+    Map<String, double> tempCategoryMap = _isExpenseMode
+        ? {
+            'Food': 0.0,
+            'Transport': 0.0,
+            'Medical': 0.0,
+            'Bills': 0.0,
+            'Other': 0.0,
+          }
+        : {
+            'Salary': 0.0,
+            'Business': 0.0,
+            'Investment': 0.0,
+            'Gift': 0.0,
+            'Other': 0.0,
+          };
 
     double total = 0.0;
     DateTime now = DateTime.now();
+    String targetType = _isExpenseMode ? 'Expense' : 'Income';
 
     for (var tx in allTx) {
-      if (tx['type'] == 'Expense') {
+      if (tx['type'] == targetType) {
         // 📅 DD/MM/YYYY Format එක parse කරගැනීම සඳහා safe logic එක
         DateTime txDate;
         try {
@@ -69,13 +72,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         // 📅 Filter Logic Check
         bool includeTx = false;
         if (_isWeekly) {
-          // පහුගිය දවස් 7 ඇතුළත Transactions විතරක් ගන්න
           Duration difference = now.difference(txDate);
           if (difference.inDays <= 7 && difference.inDays >= 0) {
             includeTx = true;
           }
         } else {
-          // මේ මාසේ (Current Month & Year) Transactions විතරක් ගන්න
           if (txDate.month == now.month && txDate.year == now.year) {
             includeTx = true;
           }
@@ -87,17 +88,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           
           total += amount;
 
-          // Categorization Logic based on Title keywords
-          if (title.contains('food') || title.contains('eat') || title.contains('rice') || title.contains('lunch')) {
-            tempCategoryMap['Food'] = (tempCategoryMap['Food'] ?? 0) + amount;
-          } else if (title.contains('bus') || title.contains('train') || title.contains('fuel') || title.contains('transport') || title.contains('cab')) {
-            tempCategoryMap['Transport'] = (tempCategoryMap['Transport'] ?? 0) + amount;
-          } else if (title.contains('doctor') || title.contains('medicine') || title.contains('medical') || title.contains('hospital')) {
-            tempCategoryMap['Medical'] = (tempCategoryMap['Medical'] ?? 0) + amount;
-          } else if (title.contains('bill') || title.contains('electricity') || title.contains('water') || title.contains('broadband') || title.contains('dialog')) {
-            tempCategoryMap['Bills'] = (tempCategoryMap['Bills'] ?? 0) + amount;
+          if (_isExpenseMode) {
+            // Expense Categorization
+            if (title.contains('food') || title.contains('eat') || title.contains('rice') || title.contains('lunch')) {
+              tempCategoryMap['Food'] = (tempCategoryMap['Food'] ?? 0) + amount;
+            } else if (title.contains('bus') || title.contains('train') || title.contains('fuel') || title.contains('transport') || title.contains('cab')) {
+              tempCategoryMap['Transport'] = (tempCategoryMap['Transport'] ?? 0) + amount;
+            } else if (title.contains('doctor') || title.contains('medicine') || title.contains('medical') || title.contains('hospital')) {
+              tempCategoryMap['Medical'] = (tempCategoryMap['Medical'] ?? 0) + amount;
+            } else if (title.contains('bill') || title.contains('electricity') || title.contains('water') || title.contains('broadband') || title.contains('dialog')) {
+              tempCategoryMap['Bills'] = (tempCategoryMap['Bills'] ?? 0) + amount;
+            } else {
+              tempCategoryMap['Other'] = (tempCategoryMap['Other'] ?? 0) + amount;
+            }
           } else {
-            tempCategoryMap['Other'] = (tempCategoryMap['Other'] ?? 0) + amount;
+            // Income Categorization
+            if (title.contains('salary') || title.contains('pay') || title.contains('wage')) {
+              tempCategoryMap['Salary'] = (tempCategoryMap['Salary'] ?? 0) + amount;
+            } else if (title.contains('business') || title.contains('profit') || title.contains('sale')) {
+              tempCategoryMap['Business'] = (tempCategoryMap['Business'] ?? 0) + amount;
+            } else if (title.contains('invest') || title.contains('stock') || title.contains('crypto') || title.contains('dividend')) {
+              tempCategoryMap['Investment'] = (tempCategoryMap['Investment'] ?? 0) + amount;
+            } else if (title.contains('gift') || title.contains('bonus')) {
+              tempCategoryMap['Gift'] = (tempCategoryMap['Gift'] ?? 0) + amount;
+            } else {
+              tempCategoryMap['Other'] = (tempCategoryMap['Other'] ?? 0) + amount;
+            }
           }
         }
       }
@@ -105,7 +121,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     setState(() {
       _categoryData = tempCategoryMap;
-      _totalExpense = total;
+      _totalAmount = total;
       _isLoading = false;
     });
   }
@@ -119,6 +135,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final subTextColor = isDark ? Colors.grey : Colors.grey.shade600;
 
     final List<String> categories = _categoryData.keys.toList();
+    final Color activeThemeColor = _isExpenseMode ? Colors.redAccent : Colors.green;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -135,12 +152,85 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 0️⃣ Expense / Income Main Toggle
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              if (!_isExpenseMode) {
+                                setState(() => _isExpenseMode = true);
+                                _loadAnalyticsData();
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _isExpenseMode ? Colors.redAccent.withOpacity(0.2) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _isExpenseMode ? Colors.redAccent : Colors.transparent),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Expenses 💸',
+                                  style: TextStyle(
+                                    color: _isExpenseMode ? Colors.redAccent : subTextColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              if (_isExpenseMode) {
+                                setState(() => _isExpenseMode = false);
+                                _loadAnalyticsData();
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: !_isExpenseMode ? Colors.green.withOpacity(0.2) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: !_isExpenseMode ? Colors.green : Colors.transparent),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Income 💰',
+                                  style: TextStyle(
+                                    color: !_isExpenseMode ? Colors.green : subTextColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
                   // 1️⃣ Header Toggle (Weekly / Monthly)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _isWeekly ? 'LAST 7 DAYS EXPENSES' : 'THIS MONTH EXPENSES',
+                        _isWeekly
+                            ? (_isExpenseMode ? 'LAST 7 DAYS EXPENSES' : 'LAST 7 DAYS INCOME')
+                            : (_isExpenseMode ? 'THIS MONTH EXPENSES' : 'THIS MONTH INCOME'),
                         style: TextStyle(
                           color: subTextColor,
                           fontSize: 12,
@@ -160,7 +250,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               onTap: () {
                                 if (!_isWeekly) {
                                   setState(() => _isWeekly = true);
-                                  _loadAnalyticsData(); // Data re-load වෙනවා
+                                  _loadAnalyticsData();
                                 }
                               },
                               child: Container(
@@ -183,7 +273,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               onTap: () {
                                 if (_isWeekly) {
                                   setState(() => _isWeekly = false);
-                                  _loadAnalyticsData(); // Data re-load වෙනවා
+                                  _loadAnalyticsData();
                                 }
                               },
                               child: Container(
@@ -226,12 +316,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Expense Overview',
+                                _isExpenseMode ? 'Expense Overview' : 'Income Overview',
                                 style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.bold),
                               ),
                               Text(
-                                'Total: Rs. ${_totalExpense.toStringAsFixed(2)}',
-                                style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                                'Total: Rs. ${_totalAmount.toStringAsFixed(2)}',
+                                style: TextStyle(color: activeThemeColor, fontSize: 13, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -241,7 +331,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             child: BarChart(
                               BarChartData(
                                 alignment: BarChartAlignment.spaceAround,
-                                maxY: (_totalExpense > 0 ? _totalExpense * 1.2 : 1000),
+                                maxY: (_totalAmount > 0 ? _totalAmount * 1.2 : 1000),
                                 barTouchData: BarTouchData(enabled: true),
                                 titlesData: FlTitlesData(
                                   show: true,
@@ -280,7 +370,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     barRods: [
                                       BarChartRodData(
                                         toY: val,
-                                        color: Colors.orangeAccent,
+                                        color: _isExpenseMode ? Colors.orangeAccent : Colors.greenAccent.shade700,
                                         width: 18,
                                         borderRadius: const BorderRadius.only(
                                           topLeft: Radius.circular(6),
@@ -299,9 +389,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // 3️⃣ Category Spending List Title
+                  // 3️⃣ Category Breakdown List Title
                   Text(
-                    'CATEGORY SPENDING (EXPENSE)',
+                    _isExpenseMode ? 'CATEGORY SPENDING (EXPENSE)' : 'INCOME SOURCES',
                     style: TextStyle(
                       color: subTextColor,
                       fontSize: 12,
@@ -312,12 +402,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   const SizedBox(height: 12),
 
                   // 4️⃣ Category Cards
-                  if (_totalExpense == 0)
+                  if (_totalAmount == 0)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.all(20.0),
                         child: Text(
-                          'No expense records found for this period! 📉',
+                          _isExpenseMode
+                              ? 'No expense records found for this period! 📉'
+                              : 'No income records found for this period! 📈',
                           style: TextStyle(color: subTextColor),
                         ),
                       ),
@@ -328,7 +420,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         double amount = _categoryData[category] ?? 0.0;
                         if (amount == 0) return const SizedBox.shrink();
 
-                        double percentage = (_totalExpense > 0) ? (amount / _totalExpense) * 100 : 0.0;
+                        double percentage = (_totalAmount > 0) ? (amount / _totalAmount) * 100 : 0.0;
 
                         return Card(
                           color: cardColor,
@@ -345,13 +437,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               style: TextStyle(fontWeight: FontWeight.bold, color: textColor, fontSize: 15),
                             ),
                             subtitle: Text(
-                              '${percentage.toStringAsFixed(1)}% of total expense',
+                              '${percentage.toStringAsFixed(1)}% of total ${_isExpenseMode ? 'expense' : 'income'}',
                               style: TextStyle(color: subTextColor, fontSize: 12),
                             ),
                             trailing: Text(
                               'Rs. ${amount.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                color: Colors.redAccent,
+                              style: TextStyle(
+                                color: activeThemeColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
