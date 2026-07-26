@@ -50,8 +50,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     for (var tx in allTx) {
       if (tx['type'] == 'Expense') {
-        // Date parse කරගැනීම
-        DateTime txDate = DateTime.parse(tx['date']);
+        // 📅 DD/MM/YYYY Format එක parse කරගැනීම සඳහා safe logic එක
+        DateTime txDate;
+        try {
+          List<String> parts = tx['date'].toString().split('/');
+          if (parts.length == 3) {
+            int day = int.parse(parts[0]);
+            int month = int.parse(parts[1]);
+            int year = int.parse(parts[2]);
+            txDate = DateTime(year, month, day);
+          } else {
+            txDate = DateTime.parse(tx['date']);
+          }
+        } catch (e) {
+          txDate = DateTime.now();
+        }
 
         // 📅 Filter Logic Check
         bool includeTx = false;
