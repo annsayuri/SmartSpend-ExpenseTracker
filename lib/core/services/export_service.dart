@@ -1,164 +1,96 @@
 import 'dart:io';
+import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:csv/csv.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ExportService {
-  // 📄 Export Data to PDF
+  
+  // 1. Export as PDF Method
   static Future<void> exportToPDF(List<Map<String, dynamic>> transactions) async {
     final pdf = pw.Document();
-
-    // Calculate Summary Data
-    double totalIncome = 0.0;
-    double totalExpense = 0.0;
-
-    for (var tx in transactions) {
-      double amount = (tx['amount'] as num).toDouble();
-      if (tx['type'] == 'Income') {
-        totalIncome += amount;
-      } else {
-        totalExpense += amount;
-      }
-    }
-
-    double netBalance = totalIncome - totalExpense;
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
           return [
-            // Header Section
             pw.Header(
               level: 0,
               child: pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text(
-                    'SmartSpend Financial Report',
-                    style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
-                  ),
-                  pw.Text(
-                    DateTime.now().toString().split(' ')[0],
-                    style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
-                  ),
+                  pw.Text('SmartSpend - Transaction Report',
+                      style: pw.TextStyle(
+                          fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(DateTime.now().toString().split(' ')[0]),
                 ],
               ),
             ),
-            pw.SizedBox(height: 10),
-
-            // Summary Cards
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-              children: [
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(10),
-                  decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.green)),
-                  child: pw.Column(
-                    children: [
-                      pw.Text('Total Income', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-                      pw.Text(
-                        'Rs. ${totalIncome.toStringAsFixed(2)}',
-                        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.green),
-                      ),
-                    ],
-                  ),
-                ),
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(10),
-                  decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.red)),
-                  child: pw.Column(
-                    children: [
-                      pw.Text('Total Expense', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-                      pw.Text(
-                        'Rs. ${totalExpense.toStringAsFixed(2)}',
-                        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.red),
-                      ),
-                    ],
-                  ),
-                ),
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(10),
-                  decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.blue)),
-                  child: pw.Column(
-                    children: [
-                      pw.Text('Net Balance', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-                      pw.Text(
-                        'Rs. ${netBalance.toStringAsFixed(2)}',
-                        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blue),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
             pw.SizedBox(height: 20),
-
-            // Transactions Table Title
-            pw.Text('Transaction Details', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 10),
-
-            // Table Data
-            pw.TableHelper.fromTextArray(
-              headers: ['Title', 'Type', 'Amount (Rs.)', 'Date'],
+            pw.Table.fromTextArray(
+              headers: ['ID', 'Title', 'Amount', 'Type', 'Date'],
               data: transactions.map((tx) {
                 return [
+                  tx['id'].toString(),
                   tx['title'].toString(),
+                  'Rs. ${tx['amount']}',
                   tx['type'].toString(),
-                  (tx['amount'] as num).toStringAsFixed(2),
                   tx['date'].toString(),
                 ];
               }).toList(),
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-              headerDecoration: const pw.BoxDecoration(color: PdfColors.deepPurple),
-              cellAlignment: pw.Alignment.centerLeft,
-              cellPadding: const pw.EdgeInsets.all(6),
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+              rowDecoration: const pw.BoxDecoration(
+                border: pw.Border(
+                  bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
+                ),
+              ),
             ),
           ];
         },
       ),
     );
 
-    // Layout and share / print PDF
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
     );
   }
 
-  // 📊 Generate CSV & Share via System Dialog
+  // 2. Export as CSV Method
   static Future<void> exportAndShareCSV(List<Map<String, dynamic>> transactions) async {
-    List<List<dynamic>> rows = [];
+    try {
+      List<List<dynamic>> csvData = [
+        ['ID', 'Title', 'Amount', 'Type', 'Category', 'Date'],
+      ];
 
-    // Add CSV Headers
-    rows.add(["ID", "Title", "Amount", "Type", "Date"]);
+      for (var tx in transactions) {
+        csvData.add([
+          tx['id'],
+          tx['title'],
+          tx['amount'],
+          tx['type'],
+          tx['category'] ?? 'N/A',
+          tx['date'],
+        ]);
+      }
 
-    // Add Data Rows
-    for (var tx in transactions) {
-      rows.add([
-        tx['id'],
-        tx['title'],
-        tx['amount'],
-        tx['type'],
-        tx['date'],
-      ]);
+      String csv = const ListToCsvConverter().convert(csvData);
+
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/smartspend_transactions.csv';
+      final file = File(path);
+
+      await file.writeAsString(csv);
+
+      await Share.shareXFiles(
+        [XFile(path)],
+        text: 'SmartSpend Expense Report (CSV)',
+      );
+    } catch (e) {
+      print("CSV Export Error: $e");
     }
-
-    String csvData = const ListToCsvConverter().convert(rows);
-
-    // Get Temporary Directory & Save CSV File
-    final directory = await getTemporaryDirectory();
-    final path = "${directory.path}/smartspend_transactions_${DateTime.now().millisecondsSinceEpoch}.csv";
-    final file = File(path);
-    await file.writeAsString(csvData);
-
-    // Share File using Share Plus Package
-    await Share.shareXFiles(
-      [XFile(path)],
-      text: 'SmartSpend Transactions CSV Export 📊',
-    );
   }
 }
