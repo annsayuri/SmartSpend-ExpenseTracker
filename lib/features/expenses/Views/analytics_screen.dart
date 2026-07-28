@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/database/db_helper.dart';
-import '../../../core/services/export_service.dart'; // 📄 Export Service එක import කර ඇත
+import '../../../core/services/export_service.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({Key? key}) : super(key: key);
@@ -19,7 +19,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Map<String, double> _categoryData = {};
   double _totalAmount = 0.0;
-  List<Map<String, dynamic>> _rawTransactions = []; // PDF/CSV export සඳහා raw data
+  List<Map<String, dynamic>> _rawTransactions = [];
 
   @override
   void initState() {
@@ -31,7 +31,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     setState(() => _isLoading = true);
 
     List<Map<String, dynamic>> allTx = await _dbHelper.getAllTransactions();
-    _rawTransactions = allTx; // Export කිරීම සඳහා data збереගැනීම
+    _rawTransactions = allTx;
     
     Map<String, double> tempCategoryMap = _isExpenseMode
         ? {
@@ -124,7 +124,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     });
   }
 
-  // 📥 Export Options Modal Sheet Dialog
+  // Export Options Modal Sheet Dialog
   void _showExportOptions(BuildContext context) {
     if (_rawTransactions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -163,12 +163,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 leading: const Icon(Icons.table_chart, color: Colors.green, size: 30),
                 title: const Text('Export as CSV Spreadsheet', style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text('Compatible with Microsoft Excel & Google Sheets'),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
-                  String csvData = ExportService.generateCSV(_rawTransactions);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('CSV Report Generated Successfully!')),
-                  );
+                  await ExportService.exportAndShareCSV(_rawTransactions);
                 },
               ),
             ],
@@ -197,7 +194,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // 📥 Download Icon එක AppBar එකේ දකුණු පසට එකතු කර ඇත
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
             tooltip: 'Export PDF / CSV',

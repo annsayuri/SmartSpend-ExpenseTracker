@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ExportService {
   // 📄 Export Data to PDF
@@ -126,8 +129,8 @@ class ExportService {
     );
   }
 
-  // 📊 Generate CSV Format Data
-  static String generateCSV(List<Map<String, dynamic>> transactions) {
+  // 📊 Generate CSV & Share via System Dialog
+  static Future<void> exportAndShareCSV(List<Map<String, dynamic>> transactions) async {
     List<List<dynamic>> rows = [];
 
     // Add CSV Headers
@@ -144,6 +147,18 @@ class ExportService {
       ]);
     }
 
-    return const ListToCsvConverter().convert(rows);
+    String csvData = const ListToCsvConverter().convert(rows);
+
+    // Get Temporary Directory & Save CSV File
+    final directory = await getTemporaryDirectory();
+    final path = "${directory.path}/smartspend_transactions_${DateTime.now().millisecondsSinceEpoch}.csv";
+    final file = File(path);
+    await file.writeAsString(csvData);
+
+    // Share File using Share Plus Package
+    await Share.shareXFiles(
+      [XFile(path)],
+      text: 'SmartSpend Transactions CSV Export 📊',
+    );
   }
 }
