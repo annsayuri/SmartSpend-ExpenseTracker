@@ -11,24 +11,28 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # 📄 PDF සහ CSV සඳහා අලුතෙන් එකතු කරන Packages:
-  pdf: ^3.10.8
-  printing: ^5.13.1
+  # PDF සහ CSV සඳහා Packages:
+  pdf: ^3.11.1
+  printing: ^5.13.3
   csv: ^6.0.0
-  path_provider: ^2.1.2
-  share_plus: ^10.0.0
+  path_provider: ^2.1.5
+  share_plus: ^10.1.4
 
   cupertino_icons: ^1.0.8
-  sqflite: ^2.4.0
+  sqflite: ^2.4.1
   path: ^1.9.0
-  intl: ^0.19.0 # 👈 ඩේට් ෆෝමැට් කරන්න දාපු පැකේජ් එක
+  intl: ^0.19.0
   
-  # 🌐 Chrome (Web) එකේ SQLite වැඩ කරන්න මේ පැකේජ් දෙක අනිවාර්යයෙන්ම එකතු කරන්න:
-  sqflite_common_ffi: ^2.3.0
-  sqflite_common_ffi_web: ^0.4.0
+  # Chrome (Web) එකේ SQLite වැඩ කිරීමට:
+  sqflite_common_ffi: ^2.3.4
+  sqflite_common_ffi_web: ^0.4.5+4
   fl_chart: ^1.2.0
-  shared_preferences: ^2.3.2
+  shared_preferences: ^2.3.5
   provider: ^6.1.2
+
+# දෝෂ සහිත jni 1.0.1 package එක ඉවත් කර 1.0.3 ලබා දීමට:
+dependency_overrides:
+  jni: 1.0.3
 
 dev_dependencies:
   flutter_test:
