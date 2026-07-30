@@ -1,19 +1,55 @@
 import 'package:flutter/material.dart';
-import '../../../../main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({Key? key}) : super(key: key);
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final TextEditingController _nameController = TextEditingController(text: "Ann Sayuri");
-  final TextEditingController _emailController = TextEditingController(text: "ann@example.com");
-  
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+
+  bool _isDarkMode = true;
+  bool _billReminders = true;
   String _selectedCurrency = 'LKR (Rs.)';
-  bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _nameController.text = prefs.getString('user_name') ?? 'Ann Sayuri Kotikawaththa';
+      _emailController.text = prefs.getString('user_email') ?? 'ann@example.com';
+      _isDarkMode = prefs.getBool('dark_mode') ?? true;
+      _billReminders = prefs.getBool('bill_reminders') ?? true;
+      _selectedCurrency = prefs.getString('currency') ?? 'LKR (Rs.)';
+    });
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', _nameController.text);
+    await prefs.setString('user_email', _emailController.text);
+    await prefs.setBool('dark_mode', _isDarkMode);
+    await prefs.setBool('bill_reminders', _billReminders);
+    await prefs.setString('currency', _selectedCurrency);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Settings saved successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -24,167 +60,166 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 🌗 දැනට මුළු ඇප් එකේම Dark Mode එක On ද නැද්ද කියලා මෙතනින් හඳුනා ගන්නවා
-    final bool isDark = themeNotifier.value == ThemeMode.dark;
-
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: const Text('Settings & Profile ⚙️', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
-        foregroundColor: Colors.white,
+        title: const Text('Settings & Profile ⚙️'),
+        backgroundColor: const Color(0xFF311B92),
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 👤 Profile Section Card එක
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20.0),
-                side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+            // Profile Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white12),
               ),
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    const CircleAvatar(
-                      radius: 45,
-                      backgroundColor: Colors.deepPurple,
-                      child: Text('AS', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-                    ),
-                    const SizedBox(height: 16.0),
-                    
-                    // Name Input Field
-                    TextField(
-                      controller: _nameController,
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                      decoration: InputDecoration(
-                        labelText: 'Full Name',
-                        labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                        prefixIcon: Icon(Icons.person_outline, color: isDark ? Colors.white70 : Colors.grey),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                          borderSide: BorderSide(color: isDark ? Colors.white30 : Colors.grey.shade400),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12.0),
-                    
-                    // Email Input Field
-                    TextField(
-                      controller: _emailController,
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                      decoration: InputDecoration(
-                        labelText: 'Email Address',
-                        labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                        prefixIcon: Icon(Icons.email_outlined, color: isDark ? Colors.white70 : Colors.grey),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                          borderSide: BorderSide(color: isDark ? Colors.white30 : Colors.grey.shade400),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20.0),
-
-            // ⚙️ App Preferences Section
-            Text(
-              'App Preferences',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.grey.shade400 : Colors.blueGrey.shade800),
-            ),
-            const SizedBox(height: 10.0),
-
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20.0),
-                side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
-              ),
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
               child: Column(
                 children: [
-                  // 🌗 Dark Mode Toggle Switch
-                  SwitchListTile(
-                    title: Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black)),
-                    subtitle: Text('Toggle between light and dark theme', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
-                    secondary: Icon(
-                      isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                      color: Colors.amber.shade700,
+                  const CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Color(0xFF673AB7),
+                    child: Text(
+                      'AS',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                    value: isDark,
-                    activeColor: Colors.deepPurple.shade400,
-                    onChanged: (bool value) {
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _nameController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Full Name',
+                      labelStyle: const TextStyle(color: Colors.white70),
+                      prefixIcon: const Icon(Icons.person_outline, color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.white38),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF673AB7)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _emailController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Email Address',
+                      labelStyle: const TextStyle(color: Colors.white70),
+                      prefixIcon: const Icon(Icons.email_outlined, color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.white38),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF673AB7)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'App Preferences',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Settings Preferences List
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Dark Mode', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Toggle between light and dark theme', style: TextStyle(color: Colors.white54)),
+                    value: _isDarkMode,
+                    activeColor: const Color(0xFF673AB7),
+                    onChanged: (val) {
                       setState(() {
-                        // 👈 මෙන්න මෙතනින් මුළු ඇප් එකේම තේමාව වෙනස් කරන Global Notifier එක Update කරනවා
-                        themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+                        _isDarkMode = val;
                       });
                     },
                   ),
-                  Divider(height: 1, color: isDark ? Colors.white10 : Colors.black12),
-
-                  // 💱 Currency Selection Dropdown
+                  const Divider(color: Colors.white12, height: 1),
                   ListTile(
                     leading: const Icon(Icons.monetization_on_outlined, color: Colors.blue),
-                    title: Text('Primary Currency', style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black)),
-                    subtitle: Text(_selectedCurrency, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+                    title: const Text('Primary Currency', style: TextStyle(color: Colors.white)),
+                    subtitle: Text(_selectedCurrency, style: const TextStyle(color: Colors.white54)),
                     trailing: DropdownButton<String>(
                       value: _selectedCurrency,
-                      dropdownColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 14),
+                      dropdownColor: const Color(0xFF1E1E1E),
+                      style: const TextStyle(color: Colors.white),
                       underline: const SizedBox(),
-                      iconEnabledColor: isDark ? Colors.white : Colors.black,
-                      items: <String>['LKR (Rs.)', 'USD (\$)', 'EUR (€)', 'GBP (£)'].map((String value) {
-                        return DropdownMenuItem<String>(value: value, child: Text(value));
+                      items: <String>['LKR (Rs.)', 'USD (\$)', 'EUR (€)', 'GBP (£)']
+                          .map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
                       }).toList(),
-                      onChanged: (newValue) {
-                        if (newValue != null) {
-                          setState(() => _selectedCurrency = newValue);
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedCurrency = val;
+                          });
                         }
                       },
                     ),
                   ),
-                  Divider(height: 1, color: isDark ? Colors.white10 : Colors.black12),
-
-                  // 🔔 Notifications Toggle
+                  const Divider(color: Colors.white12, height: 1),
                   SwitchListTile(
-                    title: Text('Bill Reminders & Alerts', style: TextStyle(fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black)),
-                    subtitle: Text('Get notified for upcoming bills', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
-                    secondary: const Icon(Icons.notifications_active_outlined, color: Colors.green),
-                    value: _notificationsEnabled,
-                    activeColor: Colors.deepPurple.shade400,
-                    onChanged: (bool value) {
-                      setState(() => _notificationsEnabled = value);
+                    title: const Text('Bill Reminders & Alerts', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Get notified for upcoming bills', style: TextStyle(color: Colors.white54)),
+                    value: _billReminders,
+                    activeColor: const Color(0xFF673AB7),
+                    onChanged: (val) {
+                      setState(() {
+                        _billReminders = val;
+                      });
                     },
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24.0),
+            const SizedBox(height: 24),
 
-            // 💾 Save Button
+            // Save Button
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Profile Settings Saved Successfully! 💾'), backgroundColor: Colors.green),
-                  );
-                },
-                icon: const Icon(Icons.save_rounded, color: Colors.white),
-                label: const Text('Save Settings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                onPressed: _saveSettings,
+                icon: const Icon(Icons.save),
+                label: const Text('Save Settings', style: TextStyle(fontSize: 16)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? Colors.deepPurple.shade500 : Colors.deepPurple.shade700,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+                  backgroundColor: const Color(0xFF673AB7),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
