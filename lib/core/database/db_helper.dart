@@ -124,6 +124,18 @@ class DBHelper {
     }
   }
 
+  // 🧹 CLEAR ALL - සියලුම දත්ත මකා දැමීම
+  Future<int> deleteAllTransactions() async {
+    if (kIsWeb) {
+      int count = _webMockDatabase.length;
+      _webMockDatabase.clear();
+      return count;
+    } else {
+      final db = await database as Database;
+      return await db.delete('transactions');
+    }
+  }
+
   // 🎯 Budget එක සේව් කරන්න හෝ අප්ඩේට් කරන්න
   Future<int> insertOrUpdateBudget(double amount) async {
     if (kIsWeb) {
