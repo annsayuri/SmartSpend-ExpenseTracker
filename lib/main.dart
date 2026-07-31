@@ -9,8 +9,8 @@ void main() async {
   // Database operations සඳහා WidgetsBinding සක්‍රීය කිරීම
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🧹 Database එකේ තියෙන සියලුම පැරණි Data Clean කිරීමට (මෙය එක පාරක් Run කරන්න):
-  await DBHelper().deleteAllTransactions();
+  // 🧹 Database එක Clear කිරීම සාර්ථකව සිදු වූ නිසා මෙය Comment කර ඇත:
+  // await DBHelper().deleteAllTransactions();
 
   runApp(const MyApp());
 }
