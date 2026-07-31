@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'features/expenses/views/expense_list_screen.dart'; // 💡 ඔයාගේ expense_list_screen එක තියෙන නිවැරදි path එක දාන්න
+import 'core/database/db_helper.dart';
 
 // 🌗 මුළු ඇප් එකේම Theme එක පාලනය කරන Global Notifier එක
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
-void main() {
+void main() async {
+  // Database operations සඳහා WidgetsBinding සක්‍රීය කිරීම
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 🧹 Database එකේ තියෙන සියලුම පැරණි Data Clean කිරීමට (මෙය එක පාරක් Run කරන්න):
+  await DBHelper().deleteAllTransactions();
+
   runApp(const MyApp());
 }
 
