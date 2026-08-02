@@ -53,7 +53,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
   Future<void> _saveBudget() async {
     double? amount = double.tryParse(_budgetController.text);
     if (amount != null && amount > 0) {
-      await _dbHelper.insertOrUpdateBudget(amount);
+      await _dbHelper.setBudget(amount);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Budget Limit Updated Successfully! 🎉'),

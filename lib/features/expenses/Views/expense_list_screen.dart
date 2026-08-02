@@ -8,6 +8,7 @@ import 'settings_screen.dart';
 import 'budget_screen.dart'; 
 import 'bill_reminder_screen.dart';
 import 'transaction_history_screen.dart';
+import 'package:smartspend_expensetracker/features/expenses/model/expense_model.dart';
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
