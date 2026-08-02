@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/database/db_helper.dart';
-import '../../../main.dart'; // themeNotifier සඳහා
+import '../../../core/theme/theme_provider.dart'; // 🎨 ThemeProvider import එක
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -15,7 +16,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
 
-  bool _isDarkMode = themeNotifier.value == ThemeMode.dark;
   bool _billReminders = true;
   String _selectedCurrency = 'LKR (Rs.)';
   bool _isLoading = true;
@@ -30,13 +30,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     if (!mounted) return;
 
     setState(() {
       _nameController.text = prefs.getString('user_name') ?? 'Ann Sayuri Kotikawaththa';
       _emailController.text = prefs.getString('user_email') ?? 'ann@example.com';
-      _isDarkMode = prefs.getBool('dark_mode') ?? (themeNotifier.value == ThemeMode.dark);
       _billReminders = prefs.getBool('bill_reminders') ?? true;
       _selectedCurrency = prefs.getString('currency') ?? 'LKR (Rs.)';
       _isLoading = false;
@@ -47,7 +46,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_name', _nameController.text.trim());
     await prefs.setString('user_email', _emailController.text.trim());
-    await prefs.setBool('dark_mode', _isDarkMode);
     await prefs.setBool('bill_reminders', _billReminders);
     await prefs.setString('currency', _selectedCurrency);
 
@@ -63,9 +61,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // 🚪 Logout Functionality
+  // 🚪 Logout Functionality
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_logged_in', false); // Login Session එක clear කිරීම
+    await prefs.remove('is_logged_in'); // හෝ await prefs.setBool('is_logged_in', false);
 
     if (mounted) {
       Navigator.pushAndRemoveUntil(
@@ -126,7 +125,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // 🎨 ThemeProvider එක සම්බන්ධ කර ගැනීම
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
     final cardBgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.white70 : Colors.black54;
@@ -226,16 +228,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     child: Column(
                       children: [
+                        // 🌙 Dark Mode Switch (ThemeProvider එක හරහා Direct Toggle වේ)
                         SwitchListTile(
                           title: Text('Dark Mode', style: TextStyle(color: textColor)),
                           subtitle: Text('Toggle between light and dark theme', style: TextStyle(color: subTextColor)),
-                          value: _isDarkMode,
+                          value: themeProvider.isDarkMode,
                           activeThumbColor: const Color(0xFF673AB7),
                           onChanged: (val) {
-                            setState(() {
-                              _isDarkMode = val;
-                              themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
-                            });
+                            themeProvider.toggleTheme(val); // Instant update across the app
                           },
                         ),
                         Divider(color: isDark ? Colors.white12 : Colors.black12, height: 1),
