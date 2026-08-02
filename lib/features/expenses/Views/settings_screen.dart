@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/database/db_helper.dart'; 
+import '../../../core/database/db_helper.dart';
+import '../../../main.dart'; // 👈 main.dart එක import කරන්න (themeNotifier එක සඳහා)
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -13,7 +14,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
 
-  bool _isDarkMode = true;
+  bool _isDarkMode = themeNotifier.value == ThemeMode.dark;
   bool _billReminders = true;
   String _selectedCurrency = 'LKR (Rs.)';
 
@@ -28,7 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _nameController.text = prefs.getString('user_name') ?? 'Ann Sayuri Kotikawaththa';
       _emailController.text = prefs.getString('user_email') ?? 'ann@example.com';
-      _isDarkMode = prefs.getBool('dark_mode') ?? true;
+      _isDarkMode = prefs.getBool('dark_mode') ?? (themeNotifier.value == ThemeMode.dark);
       _billReminders = prefs.getBool('bill_reminders') ?? true;
       _selectedCurrency = prefs.getString('currency') ?? 'LKR (Rs.)';
     });
@@ -52,32 +53,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // 🗑️ Data Reset Confirm Dialog Box
   void _showResetConfirmationDialog() {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
-          title: const Text('Reset All Data?', style: TextStyle(color: Colors.white)),
+          title: const Text('Reset All Data?'),
           content: const Text(
-            'මෙමඟින් ඔබේ සියලුම Transactions (Expenses/Income) දත්ත ස්ථීරවම මැකී යනු ඇත. ඔබට විශ්වාසද?',
-            style: TextStyle(color: Colors.white70),
+            'මෙමඟින් ඔබේ සියලුම Transactions දත්ත ස්ථීරවම මැකී යනු ඇත. ඔබට විශ්වාසද?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              child: const Text('Cancel'),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () async {
-                Navigator.pop(dialogContext); // Dialog එක ක්ලෝස් කිරීම
-
-                // 1. Database එකේ සියලුම Transactions මකා දැමීම
+                Navigator.pop(dialogContext);
                 await DBHelper().deleteAllTransactions();
-
-                // 2. Success Message එකක් පෙන්වීම
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -104,11 +98,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Theme එක අනුව Colors තීරණය කිරීම 🎨
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         title: const Text('Settings & Profile ⚙️'),
         backgroundColor: const Color(0xFF311B92),
+        foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -120,9 +120,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: cardBgColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white12),
+                border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
               ),
               child: Column(
                 children: [
@@ -141,14 +141,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 20),
                   TextField(
                     controller: _nameController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: textColor),
                     decoration: InputDecoration(
                       labelText: 'Full Name',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      prefixIcon: const Icon(Icons.person_outline, color: Colors.white70),
+                      labelStyle: TextStyle(color: subTextColor),
+                      prefixIcon: Icon(Icons.person_outline, color: subTextColor),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white38),
+                        borderSide: BorderSide(color: isDark ? Colors.white38 : Colors.black26),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -159,14 +159,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: _emailController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: textColor),
                     decoration: InputDecoration(
                       labelText: 'Email Address',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      prefixIcon: const Icon(Icons.email_outlined, color: Colors.white70),
+                      labelStyle: TextStyle(color: subTextColor),
+                      prefixIcon: Icon(Icons.email_outlined, color: subTextColor),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white38),
+                        borderSide: BorderSide(color: isDark ? Colors.white38 : Colors.black26),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -178,10 +178,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'App Preferences',
               style: TextStyle(
-                color: Colors.white,
+                color: textColor,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -191,32 +191,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Settings Preferences List
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: cardBgColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white12),
+                border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
               ),
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: const Text('Dark Mode', style: TextStyle(color: Colors.white)),
-                    subtitle: const Text('Toggle between light and dark theme', style: TextStyle(color: Colors.white54)),
+                    title: Text('Dark Mode', style: TextStyle(color: textColor)),
+                    subtitle: Text('Toggle between light and dark theme', style: TextStyle(color: subTextColor)),
                     value: _isDarkMode,
                     activeColor: const Color(0xFF673AB7),
                     onChanged: (val) {
                       setState(() {
                         _isDarkMode = val;
+                        // 🔄 Global Theme එක වෙනස් කිරීම
+                        themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
                       });
                     },
                   ),
-                  const Divider(color: Colors.white12, height: 1),
+                  Divider(color: isDark ? Colors.white12 : Colors.black12, height: 1),
                   ListTile(
                     leading: const Icon(Icons.monetization_on_outlined, color: Colors.blue),
-                    title: const Text('Primary Currency', style: TextStyle(color: Colors.white)),
-                    subtitle: Text(_selectedCurrency, style: const TextStyle(color: Colors.white54)),
+                    title: Text('Primary Currency', style: TextStyle(color: textColor)),
+                    subtitle: Text(_selectedCurrency, style: TextStyle(color: subTextColor)),
                     trailing: DropdownButton<String>(
                       value: _selectedCurrency,
-                      dropdownColor: const Color(0xFF1E1E1E),
-                      style: const TextStyle(color: Colors.white),
+                      dropdownColor: cardBgColor,
+                      style: TextStyle(color: textColor),
                       underline: const SizedBox(),
                       items: <String>['LKR (Rs.)', 'USD (\$)', 'EUR (€)', 'GBP (£)']
                           .map((String value) {
@@ -234,10 +236,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                   ),
-                  const Divider(color: Colors.white12, height: 1),
+                  Divider(color: isDark ? Colors.white12 : Colors.black12, height: 1),
                   SwitchListTile(
-                    title: const Text('Bill Reminders & Alerts', style: TextStyle(color: Colors.white)),
-                    subtitle: const Text('Get notified for upcoming bills', style: TextStyle(color: Colors.white54)),
+                    title: Text('Bill Reminders & Alerts', style: TextStyle(color: textColor)),
+                    subtitle: Text('Get notified for upcoming bills', style: TextStyle(color: subTextColor)),
                     value: _billReminders,
                     activeColor: const Color(0xFF673AB7),
                     onChanged: (val) {
@@ -257,8 +259,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               height: 50,
               child: ElevatedButton.icon(
                 onPressed: _saveSettings,
-                icon: const Icon(Icons.save),
-                label: const Text('Save Settings', style: TextStyle(fontSize: 16)),
+                icon: const Icon(Icons.save, color: Colors.white),
+                label: const Text('Save Settings', style: TextStyle(fontSize: 16, color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF673AB7),
                   shape: RoundedRectangleBorder(
@@ -286,9 +288,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Resetting will erase all recorded transactions permanently.',
-                    style: TextStyle(color: Colors.white60, fontSize: 13),
+                    style: TextStyle(color: subTextColor, fontSize: 13),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
