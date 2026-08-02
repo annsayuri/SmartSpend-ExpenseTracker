@@ -1,207 +1,187 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:bcrypt/bcrypt.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Imports & Exports (Models access කිරීමට)
+import 'package:smartspend_expensetracker/features/expenses/model/user_model.dart';
+import 'package:smartspend_expensetracker/features/expenses/model/expense_model.dart';
+
+export 'package:smartspend_expensetracker/features/expenses/model/user_model.dart';
+export 'package:smartspend_expensetracker/features/expenses/model/expense_model.dart';
 
 class DBHelper {
-  // 🔒 Singleton Pattern
   static final DBHelper _instance = DBHelper._internal();
+  static Database? _database;
+
   factory DBHelper() => _instance;
   DBHelper._internal();
 
-  static Database? _database;
-  
-  // 🌐 Web වලදී දත්ත තාවකාලිකව තබා ගැනීමට Memory List එකක් (Mock SQL Database)
-  final List<Map<String, dynamic>> _webMockDatabase = [];
-  int _nextWebId = 1;
-
-  // 🗄️ Database Instance එක ලබා ගැනීම
-  Future<dynamic> get database async {
-    if (kIsWeb) return null; // Web වලදී ඇත්තම DB එකක් ඕපන් කරන්නේ නැහැ
+  Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDatabase();
+    _database = await _initDB();
     return _database!;
   }
 
-  // 📱 Mobile වලදී පමණක් Database එක initialising කිරීම
-  Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'smartspend.db');
-
+  Future<Database> _initDB() async {
+    String path = join(await getDatabasesPath(), 'smartspend.db');
     return await openDatabase(
       path,
-      version: 1,
-      onCreate: _onCreate,
+      version: 2,
+      onCreate: (db, version) async {
+        await _createTables(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await _createUsersTable(db);
+        }
+      },
     );
   }
 
-  // 📝 SQLite Table එක නිර්මාණය කිරීම (Mobile)
-  Future<void> _onCreate(Database db, int version) async {
+  static Future<void> _createTables(Database db) async {
+    await _createUsersTable(db);
     await db.execute('''
-      CREATE TABLE transactions (
+      CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         amount REAL NOT NULL,
-        type TEXT NOT NULL,
-        date TEXT NOT NULL
+        category TEXT NOT NULL,
+        date TEXT NOT NULL,
+        type TEXT NOT NULL
       )
     ''');
   }
 
-  // ➕ CREATE - අලුත් ගනුදෙනුවක් එකතු කිරීම
-  Future<int> insertTransaction(Map<String, dynamic> row) async {
-    if (kIsWeb) {
-      // 🌐 Web Mock Logic:
-      final newRow = Map<String, dynamic>.from(row);
-      newRow['id'] = _nextWebId++;
-      _webMockDatabase.add(newRow);
-      return newRow['id'];
-    } else {
-      // 📱 Mobile SQLite:
-      final db = await database as Database;
-      return await db.insert('transactions', row);
-    }
+  static Future<void> _createUsersTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL
+      )
+    ''');
   }
 
-  // 📖 READ - සියලුම ගනුදෙනු දත්ත ලබාගැනීම (Budget Record එක ඉවත් කර ඇත 🎯)
-  Future<List<Map<String, dynamic>>> getAllTransactions() async {
-    if (kIsWeb) {
-      // 🌐 Web Mock Logic: (MONTHLY_BUDGET_LIMIT එක හැර ඉතිරි දත්ත පමණක් id එක DESC විදිහට Sort කර දෙනවා)
-      final filteredList = _webMockDatabase
-          .where((element) => element['title'] != 'MONTHLY_BUDGET_LIMIT')
-          .toList();
-      filteredList.sort((a, b) => b['id'].compareTo(a['id']));
-      return filteredList;
-    } else {
-      // 📱 Mobile SQLite: (MONTHLY_BUDGET_LIMIT නොවන transactions පමණක් ලබා ගනී)
-      final db = await database as Database;
-      return await db.query(
-        'transactions',
-        where: "title != ?",
-        whereArgs: ['MONTHLY_BUDGET_LIMIT'],
-        orderBy: 'id DESC',
-      );
-    }
+  // ---------------------------------------------------------------------------
+  // 🔐 AUTHENTICATION METHODS
+  // ---------------------------------------------------------------------------
+
+  Future<bool> registerUser(String name, String email, String password, {Role role = Role.USER}) async {
+    final db = await database;
+    final existingUsers = await db.query(
+      'users',
+      where: 'LOWER(email) = ?',
+      whereArgs: [email.toLowerCase().trim()],
+    );
+
+    if (existingUsers.isNotEmpty) return false;
+
+    String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+    UserModel newUser = UserModel(
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      role: role,
+    );
+
+    await db.insert('users', newUser.toMap());
+    return true;
   }
 
-  // 🔄 UPDATE - දත්තයක් වෙනස් කිරීම
-  Future<int> updateTransaction(Map<String, dynamic> row) async {
-    int id = row['id'];
-    if (kIsWeb) {
-      // 🌐 Web Mock Logic:
-      int index = _webMockDatabase.indexWhere((element) => element['id'] == id);
-      if (index != -1) {
-        _webMockDatabase[index] = row;
-        return 1;
+  Future<UserModel?> loginUser(String email, String password) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'LOWER(email) = ?',
+      whereArgs: [email.toLowerCase().trim()],
+    );
+
+    if (maps.isNotEmpty) {
+      UserModel user = UserModel.fromMap(maps.first);
+      if (BCrypt.checkpw(password, user.password)) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('user_id', user.id!);
+        await prefs.setString('user_name', user.name);
+        await prefs.setString('user_email', user.email);
+        await prefs.setString('user_role', user.role.name);
+        await prefs.setBool('is_logged_in', true);
+        return user;
       }
-      return 0;
-    } else {
-      // 📱 Mobile SQLite:
-      final db = await database as Database;
-      return await db.update(
-        'transactions',
-        row,
-        where: 'id = ?',
-        whereArgs: [id],
-      );
     }
+    return null;
   }
 
-  // ❌ DELETE - දත්තයක් මකා දැමීම
-  Future<int> deleteTransaction(int id) async {
-    if (kIsWeb) {
-      // 🌐 Web Mock Logic:
-      int initialLength = _webMockDatabase.length;
-      _webMockDatabase.removeWhere((element) => element['id'] == id);
-      return initialLength - _webMockDatabase.length;
-    } else {
-      // 📱 Mobile SQLite:
-      final db = await database as Database;
-      return await db.delete(
-        'transactions',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
-    }
+  Future<void> logoutUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_id');
+    await prefs.remove('user_name');
+    await prefs.remove('user_email');
+    await prefs.remove('user_role');
+    await prefs.setBool('is_logged_in', false);
   }
 
-  // 🧹 CLEAR ALL - සියලුම දත්ත මකා දැමීම
+  Future<Map<String, dynamic>?> getCurrentUserSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!(prefs.getBool('is_logged_in') ?? false)) return null;
+
+    return {
+      'id': prefs.getInt('user_id'),
+      'name': prefs.getString('user_name'),
+      'email': prefs.getString('user_email'),
+      'role': prefs.getString('user_role'),
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // 💸 EXPENSE / TRANSACTION METHODS
+  // ---------------------------------------------------------------------------
+
   Future<int> deleteAllTransactions() async {
-    if (kIsWeb) {
-      int count = _webMockDatabase.length;
-      _webMockDatabase.clear();
-      return count;
-    } else {
-      final db = await database as Database;
-      return await db.delete('transactions');
-    }
+    final db = await database;
+    return await db.delete('transactions');
   }
 
-  // 🎯 Budget එක සේව් කරන්න හෝ අප්ඩේට් කරන්න
-  Future<int> insertOrUpdateBudget(double amount) async {
-    if (kIsWeb) {
-      // 🌐 Web Mock Logic:
-      int index = _webMockDatabase.indexWhere((element) => element['title'] == 'MONTHLY_BUDGET_LIMIT');
-      if (index != -1) {
-        _webMockDatabase[index]['amount'] = amount;
-        return 1;
-      } else {
-        _webMockDatabase.add({
-          'id': _nextWebId++,
-          'title': 'MONTHLY_BUDGET_LIMIT',
-          'amount': amount,
-          'type': 'Budget',
-          'date': '01/07/2026',
-        });
-        return 1;
-      }
-    } else {
-      // 📱 Mobile SQLite Logic:
-      final db = await database as Database;
-      List<Map<String, dynamic>> maps = await db.query(
-        'transactions',
-        where: "title = ?",
-        whereArgs: ['MONTHLY_BUDGET_LIMIT'],
-      );
-
-      if (maps.isNotEmpty) {
-        return await db.update(
-          'transactions',
-          {'amount': amount},
-          where: "title = ?",
-          whereArgs: ['MONTHLY_BUDGET_LIMIT'],
-        );
-      } else {
-        return await db.insert('transactions', {
-          'title': 'MONTHLY_BUDGET_LIMIT',
-          'amount': amount,
-          'type': 'Budget',
-          'date': '01/07/2026',
-        });
-      }
-    }
+  Future<int> insertTransaction(Map<String, dynamic> transaction) async {
+    final db = await database;
+    return await db.insert('transactions', transaction);
   }
 
-  // 🎯 සේව් කරපු Budget එක අරගන්න
+  // 💡 image_358e78 එකේ තිබුණු error එක විසඳීමට පහත function එක එකතු කළා
+  Future<int> updateTransaction(Map<String, dynamic> transaction) async {
+    final db = await database;
+    return await db.update(
+      'transactions',
+      transaction,
+      where: 'id = ?',
+      whereArgs: [transaction['id']],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getAllTransactions() async {
+    final db = await database;
+    return await db.query('transactions', orderBy: 'date DESC');
+  }
+
+  Future<int> deleteTransaction(int id) async {
+    final db = await database;
+    return await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ---------------------------------------------------------------------------
+  // 🎯 BUDGET METHODS
+  // ---------------------------------------------------------------------------
+
+  // 💡 image_358e1e එකේ තිබුණු error එක විසඳීමට budget functions එකතු කළා
   Future<double> getBudget() async {
-    if (kIsWeb) {
-      // 🌐 Web Mock Logic:
-      int index = _webMockDatabase.indexWhere((element) => element['title'] == 'MONTHLY_BUDGET_LIMIT');
-      if (index != -1) {
-        return _webMockDatabase[index]['amount'] as double;
-      }
-      return 0.0;
-    } else {
-      // 📱 Mobile SQLite Logic:
-      final db = await database as Database;
-      List<Map<String, dynamic>> maps = await db.query(
-        'transactions',
-        where: "title = ?",
-        whereArgs: ['MONTHLY_BUDGET_LIMIT'],
-      );
-      if (maps.isNotEmpty) {
-        return maps.first['amount'] as double;
-      }
-      return 0.0;
-    }
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('budget_limit') ?? 0.0;
+  }
+
+  Future<void> setBudget(double amount) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('budget_limit', amount);
   }
 }
