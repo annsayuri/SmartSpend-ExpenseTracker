@@ -19,13 +19,21 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _obscureNewPass = true;
   bool _obscureConfirmPass = true;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
   void _resetPassword() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
       bool success = await _dbHelper.resetPassword(
-        _emailController.text,
-        _newPasswordController.text,
+        _emailController.text.trim(),
+        _newPasswordController.text.trim(),
       );
 
       setState(() => _isLoading = false);
@@ -37,6 +45,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           const SnackBar(
             content: Text('Password Reset Successful! Please Login. 🎉'),
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
           ),
         );
         Navigator.pop(context); // Go back to Login Screen
@@ -45,6 +54,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           const SnackBar(
             content: Text('Email not found! Please check your email. ❌'),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -76,7 +86,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   const Text('Enter your registered email and new password below.'),
                   const SizedBox(height: 24),
 
-                  // Email Field
+                  // ✉️ Email Field Validation
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -86,14 +96,19 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Please enter your email';
-                      if (!val.contains('@')) return 'Enter a valid email address';
+                      if (val == null || val.trim().isEmpty) {
+                        return 'Please enter your registered email ✉️';
+                      }
+                      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                      if (!emailRegex.hasMatch(val.trim())) {
+                        return 'Please enter a valid email address! (e.g. name@domain.com)';
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
 
-                  // New Password Field
+                  // 🔑 New Password Field Validation
                   TextFormField(
                     controller: _newPasswordController,
                     obscureText: _obscureNewPass,
@@ -107,14 +122,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Please enter a new password';
-                      if (val.length < 6) return 'Password must be at least 6 characters';
+                      if (val == null || val.isEmpty) {
+                        return 'Please enter a new password 🔑';
+                      }
+                      if (val.length < 6) {
+                        return 'Password must be at least 6 characters long';
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
 
-                  // Confirm New Password Field
+                  // 🔐 Confirm New Password Field Validation
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPass,
@@ -128,14 +147,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Please confirm your password';
-                      if (val != _newPasswordController.text) return 'Passwords do not match';
+                      if (val == null || val.isEmpty) {
+                        return 'Please confirm your new password';
+                      }
+                      if (val != _newPasswordController.text) {
+                        return 'Passwords do not match! ❌';
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 28),
 
-                  // Submit Button
+                  // 🚀 Submit Button
                   ElevatedButton(
                     onPressed: _isLoading ? null : _resetPassword,
                     style: ElevatedButton.styleFrom(
@@ -145,7 +168,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
                         : const Text('Reset Password 🚀', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ],
