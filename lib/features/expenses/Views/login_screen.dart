@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:smartspend_expensetracker/core/database/db_helper.dart';
 import 'register_screen.dart';
-// TODO: ඔයාගේ Main Expense / Home Screen එක Import කරගන්න
-// import 'expense_list_screen.dart'; 
+import 'expense_list_screen.dart'; 
+import 'reset_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -41,11 +41,11 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
 
-        // 🚀 Login වුණාට පස්සේ Main/Home Screen එකට Navigate කිරීම
-        // Navigator.pushReplacement(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => const ExpenseListScreen()),
-        // );
+        // 🚀 Login වුණාට පස්සේ ExpenseListScreen (Dashboard) එකට Navigate වීම
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ExpenseListScreen()),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

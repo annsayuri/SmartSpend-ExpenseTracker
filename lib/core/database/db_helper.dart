@@ -121,6 +121,36 @@ class DBHelper {
     return null;
   }
 
+  // 🔄 Password Reset Method
+  Future<bool> resetPassword(String email, String newPassword) async {
+    try {
+      final db = await database;
+
+      // Email එක DB එකේ තියෙනවාද බලමු
+      final List<Map<String, dynamic>> maps = await db.query(
+        'users',
+        where: 'LOWER(email) = ?',
+        whereArgs: [email.toLowerCase().trim()],
+      );
+
+      if (maps.isEmpty) return false; // Email එක නැත්නම් false
+
+      // New Password එක Hash කරලා Update කිරීම 🔒
+      String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+
+      int count = await db.update(
+        'users',
+        {'password': hashedPassword},
+        where: 'LOWER(email) = ?',
+        whereArgs: [email.toLowerCase().trim()],
+      );
+
+      return count > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<void> logoutUser() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear(); // Session එක සම්පූර්ණයෙන්ම clear කරයි
