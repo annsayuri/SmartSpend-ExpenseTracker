@@ -13,20 +13,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController(); // 🔒 Added Confirm Password Controller
   final DBHelper _dbHelper = DBHelper();
   
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   Role _selectedRole = Role.USER;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
       bool success = await _dbHelper.registerUser(
-        _nameController.text,
-        _emailController.text,
-        _passwordController.text,
+        _nameController.text.trim(),
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
         role: _selectedRole,
       );
 
@@ -39,6 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SnackBar(
             content: Text('Registration Successful! Please Login. 🎉'),
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
           ),
         );
         Navigator.pop(context); // Go back to Login Screen
@@ -47,6 +59,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SnackBar(
             content: Text('Email already exists! Please use a different email. ❌'),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -55,8 +68,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Account 📝'),
@@ -80,7 +91,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const Text('Create an account to track your income & expenses'),
                   const SizedBox(height: 24),
 
-                  // Name Field
+                  // 👤 Name Field Validation
                   TextFormField(
                     controller: _nameController,
                     decoration: InputDecoration(
@@ -88,11 +99,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       prefixIcon: const Icon(Icons.person_outline),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    validator: (val) => val == null || val.isEmpty ? 'Please enter your name' : null,
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) {
+                        return 'Please enter your full name 👤';
+                      }
+                      if (val.trim().length < 2) {
+                        return 'Name must be at least 2 characters long';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
 
-                  // Email Field
+                  // ✉️ Email Field Validation (With Regex)
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -102,14 +121,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Please enter an email';
-                      if (!val.contains('@')) return 'Enter a valid email address';
+                      if (val == null || val.trim().isEmpty) {
+                        return 'Please enter an email address ✉️';
+                      }
+                      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                      if (!emailRegex.hasMatch(val.trim())) {
+                        return 'Please enter a valid email address! (e.g. name@domain.com)';
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
 
-                  // Password Field
+                  // 🔒 Password Field Validation
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
@@ -123,14 +147,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     validator: (val) {
-                      if (val == null || val.isEmpty) return 'Please enter a password';
-                      if (val.length < 6) return 'Password must be at least 6 characters';
+                      if (val == null || val.isEmpty) {
+                        return 'Please enter a password 🔑';
+                      }
+                      if (val.length < 6) {
+                        return 'Password must be at least 6 characters long';
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
 
-                  // Role Selection Dropdown
+                  // 🔐 Confirm Password Field & Validation
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    obscureText: _obscureConfirmPassword,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      prefixIcon: const Icon(Icons.lock_reset),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'Please confirm your password';
+                      }
+                      if (val != _passwordController.text) {
+                        return 'Passwords do not match! ❌';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 👑 Role Selection Dropdown
                   DropdownButtonFormField<Role>(
                     value: _selectedRole,
                     decoration: InputDecoration(
@@ -152,7 +205,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 28),
 
-                  // Register Button
+                  // 🚀 Register Button
                   ElevatedButton(
                     onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(
@@ -162,7 +215,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
                         : const Text('Register 🚀', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ],
