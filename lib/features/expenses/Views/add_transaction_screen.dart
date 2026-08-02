@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 class AddTransactionScreen extends StatefulWidget {
   final Function(String title, double amount, String type) onAddTransaction;
   
-  // 👈 සංස්කරණය කිරීමේදී පැරණි දත්ත ලබා ගැනීමට Map එකක් constructor එකට එකතු කළා
+  // පැරණි දත්ත ලබා ගැනීමට Map එකක් (Edit කිරීමේදී)
   final Map<String, dynamic>? initialTransaction;
 
   const AddTransactionScreen({
     super.key, 
     required this.onAddTransaction,
-    this.initialTransaction, // 👈 මෙය අනිවාර්ය නැත (null විය හැක), අලුතින් ඇතුළත් කිරීමේදී මෙය හිස්ව පවතී
+    this.initialTransaction,
   });
 
   @override
@@ -21,7 +21,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   late final TextEditingController _titleController;
   late final TextEditingController _amountController;
   String _selectedType = 'Income';
-  bool _isEditing = false; // 👈 දැනට කරන්නේ සංස්කරණයක්ද නැද්ද යන්න හඳුනා ගැනීමට බූලියන් අගයක්
+  bool _isEditing = false;
 
   @override
   void initState() {
@@ -51,54 +51,76 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // 👈 කරන්නේ කුමන කාර්යයද යන්න මත පදනම්ව මාතෘකාව වෙනස් වේ
         title: Text(_isEditing ? 'Edit Transaction ✏️' : 'Add Transaction 💰'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // 📝 Title Field Validation
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Title',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.title_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title';
+                    return 'Please enter a title 📝';
+                  }
+                  if (value.trim().length < 2) {
+                    return 'Title must be at least 2 characters long';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16.0),
+
+              // 💰 Amount Field Validation
               TextFormField(
                 controller: _amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
                   labelText: 'Amount',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.attach_money_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter an amount';
+                    return 'Please enter an amount 💰';
                   }
-                  if (double.tryParse(value) == null) {
+                  final parsedAmount = double.tryParse(value.trim());
+                  if (parsedAmount == null) {
                     return 'Please enter a valid number';
+                  }
+                  if (parsedAmount <= 0) {
+                    return 'Amount must be greater than 0';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16.0),
+
+              // 🏷️ Transaction Type Dropdown
               DropdownButtonFormField<String>(
                 initialValue: _selectedType,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Transaction Type',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.category_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                 ),
                 items: ['Income', 'Expense'].map((String type) {
                   return DropdownMenuItem<String>(
@@ -107,39 +129,58 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedType = newValue!;
-                  });
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedType = newValue;
+                    });
+                  }
                 },
               ),
-              const SizedBox(height: 24.0),
+              const SizedBox(height: 28.0),
+
+              // 🚀 Submit Button
               SizedBox(
-                width: double.infinity,
                 height: 50.0,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+                      borderRadius: BorderRadius.circular(12.0),
                     ),
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // 🚀 දත්ත ටික Callback එක හරහා මව් තිරය වෙත යැවීම
+                      // 🚀 දත්ත ටික Callback එක හරහා යැවීම
                       widget.onAddTransaction(
-                        _titleController.text,
-                        double.parse(_amountController.text),
+                        _titleController.text.trim(),
+                        double.parse(_amountController.text.trim()),
                         _selectedType,
                       );
-                      
-                      // 🔙 දත්ත යැවීමෙන් පසු මෙම තිරය වසා දැමීම
+
+                      // 🎉 Success Message එකක් පෙන්වීම
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            _isEditing 
+                              ? 'Transaction updated successfully! ✨' 
+                              : 'Transaction added successfully! 🎉',
+                          ),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+
+                      // 🔙 Screen එක Close කිරීම
                       Navigator.pop(context);
                     }
                   },
-                  // 👈 කරන්නේ කුමන කාර්යයද යන්න මත පදනම්ව බොත්තමේ අකුරු වෙනස් වේ
                   child: Text(
-                    _isEditing ? 'Update Transaction' : 'Add Transaction',
+                    _isEditing ? 'Update Transaction ✏️' : 'Add Transaction 🚀',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
