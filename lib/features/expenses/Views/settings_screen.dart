@@ -60,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return AlertDialog(
           title: const Text('Reset All Data?'),
           content: const Text(
-            'මෙමඟින් ඔබේ සියලුම Transactions දත්ත ස්ථීරවම මැකී යනු ඇත. ඔබට විශ්වාසද?',
+            'This will permanently delete all your Transaction data. Are you sure?',
           ),
           actions: [
             TextButton(
@@ -75,7 +75,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('සියලුම දත්ත සාර්ථකව මකා දමන ලදී! 🧹'),
+                      content: Text('All data has been successfully deleted! 🧹'),
                       backgroundColor: Colors.redAccent,
                     ),
                   );
