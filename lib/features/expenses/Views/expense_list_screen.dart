@@ -8,7 +8,6 @@ import 'settings_screen.dart';
 import 'budget_screen.dart'; 
 import 'bill_reminder_screen.dart';
 import 'transaction_history_screen.dart';
-import 'package:smartspend_expensetracker/features/expenses/model/expense_model.dart';
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
@@ -31,7 +30,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     _refreshTransactions(); 
   }
 
-  void _refreshTransactions() async {
+  Future<void> _refreshTransactions() async {
     final data = await _dbHelper.getAllTransactions();
     if (!mounted) return;
     setState(() {
@@ -103,14 +102,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     _refreshTransactions(); 
   }
 
-  // 👈 1. පැරණි දත්ත යාවත්කාලීන කිරීම (Update) සඳහා නව Function එකක් එකතු කළා
   void _updateExistingTransaction(int id, String title, double amount, String type, String date) async {
     await _dbHelper.updateTransaction({
       'id': id,
       'title': title,
       'amount': amount,
       'type': type,
-      'date': date, // පැරණි දිනය එලෙසම තබා ගනී
+      'date': date, 
     });
     if (!mounted) return;
     setState(() => _isLoading = true);
@@ -124,7 +122,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark; 
 
     final filteredTransactions = _transactions.where((tx) {
-      final matchesSearch = tx['title'].toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSearch = tx['title'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
       final matchesFilter = _selectedFilter == 'All' || tx['type'] == _selectedFilter;
       return matchesSearch && matchesFilter;
     }).toList();
@@ -160,14 +158,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.history_toggle_off_rounded), // Archive Icon එක
+            icon: const Icon(Icons.history_toggle_off_rounded),
             tooltip: 'Transaction History',
             onPressed: () async {
               await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()),
               );
-              _refreshTransactions(); // නැවත පැමිණි විට දත්ත refresh කිරීමට
+              _refreshTransactions(); 
             },
           ),
           IconButton(
@@ -220,18 +218,23 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                           const SizedBox(width: 24.0),
                           Expanded(
                             flex: 6,
-                            child: _buildTransactionListSection(filteredTransactions, isDark),
+                            child: SingleChildScrollView(
+                              child: _buildTransactionListSection(filteredTransactions, isDark),
+                            ),
                           ),
                         ],
                       )
-                    : Column( 
-                        children: [
-                          _buildBalanceCard(isDark),
-                          const SizedBox(height: 16.0),
-                          _buildPieChartCard(isDark),
-                          const SizedBox(height: 20.0),
-                          Expanded(child: _buildTransactionListSection(filteredTransactions, isDark)),
-                        ],
+                    : SingleChildScrollView( // 🟢 Fix: Mobile layout එක ආරක්ෂිතව Scroll වීමට SingleChildScrollView එකතු කරන ලදී
+                        physics: const BouncingScrollPhysics(),
+                        child: Column( 
+                          children: [
+                            _buildBalanceCard(isDark),
+                            const SizedBox(height: 16.0),
+                            _buildPieChartCard(isDark),
+                            const SizedBox(height: 20.0),
+                            _buildTransactionListSection(filteredTransactions, isDark),
+                          ],
+                        ),
                       ),
               ),
             ),
@@ -258,14 +261,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
 
   Widget _buildBalanceCard(bool isDark) {
     final isNegative = _totalBalance < 0;
-    final displayBalance = (double txAmount) => txAmount.abs().toStringAsFixed(2);
+    String displayBalance(double txAmount) => txAmount.abs().toStringAsFixed(2);
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       color: isNegative 
-          ? (isDark ? Colors.red.shade900.withOpacity(0.4) : Colors.red.shade50.withOpacity(0.8)) 
-          : (isDark ? Colors.deepPurple.shade900.withOpacity(0.2) : Colors.deepPurple.shade50.withOpacity(0.6)),
+          ? (isDark ? Colors.red.shade900.withValues(alpha: 0.4) : Colors.red.shade50.withValues(alpha: 0.8)) 
+          : (isDark ? Colors.deepPurple.shade900.withValues(alpha: 0.2) : Colors.deepPurple.shade50.withValues(alpha: 0.6)),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -313,7 +316,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       children: [
         CircleAvatar(
           radius: 16,
-          backgroundColor: color.withOpacity(0.12),
+          backgroundColor: color.withValues(alpha: 0.12),
           child: Icon(icon, color: color, size: 18),
         ),
         const SizedBox(width: 8.0),
@@ -402,7 +405,83 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
+  // 🟢 Cleaned Transaction Section (Removed duplicate Expanded calls)
   Widget _buildTransactionListSection(List<Map<String, dynamic>> filteredList, bool isDark) {
+    Widget listWidget = filteredList.isEmpty
+        ? const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32.0),
+            child: Center(child: Text('No matching transactions found! 🔍', style: TextStyle(color: Colors.grey))),
+          )
+        : ListView.builder(
+            shrinkWrap: true, // 🟢 SingleChildScrollView එකක් ඇතුළේ වැඩ කිරීමට
+            physics: const NeverScrollableScrollPhysics(), // 🟢 Parent scroll view එකෙන්ම scroll වීමට
+            itemCount: filteredList.length,
+            itemBuilder: (context, index) { 
+              final tx = filteredList[index];
+              final isIncome = tx['type'] == 'Income';
+              final style = _getCategoryStyle(tx['title'], tx['type']);
+              final txAmount = (tx['amount'] as num).toDouble();
+
+              return Dismissible(
+                key: Key(tx['id'].toString()), 
+                direction: DismissDirection.endToStart, 
+                background: Container(
+                  margin: const EdgeInsets.only(bottom: 12.0),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade400, 
+                    borderRadius: BorderRadius.circular(16.0),
+                  ),
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 28),
+                ),
+                onDismissed: (direction) async {
+                  await _dbHelper.deleteTransaction(tx['id']);
+                  _refreshTransactions();
+
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('"${tx['title']}" deleted successfully!'),
+                      backgroundColor: Colors.red.shade400,
+                    ),
+                  );
+                },
+                child: GestureDetector(
+                  onLongPress: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddTransactionScreen(
+                          initialTransaction: tx, 
+                          onAddTransaction: (title, amount, type) {
+                            _updateExistingTransaction(
+                              tx['id'],
+                              title,
+                              amount,
+                              type,
+                              tx['date'],
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                    _refreshTransactions();
+                  },
+                  child: _buildTransactionItem(
+                    title: tx['title'],
+                    date: tx['date'],
+                    amount: '${isIncome ? '+' : '-'} Rs. ${txAmount.toStringAsFixed(2)}',
+                    amountColor: isIncome ? Colors.green.shade400 : Colors.red.shade400, 
+                    iconColor: style['color'], 
+                    icon: style['icon'], 
+                    isDark: isDark,
+                  ),
+                ),
+              );
+            },
+          );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -458,79 +537,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         ),
         const SizedBox(height: 12.0),
 
-        Expanded(
-          child: filteredList.isEmpty
-              ? const Center(child: Text('No matching transactions found! 🔍', style: TextStyle(color: Colors.grey)))
-              : ListView.builder(
-                  itemCount: filteredList.length,
-                  itemBuilder: (context, index) { 
-                    final tx = filteredList[index];
-                    final isIncome = tx['type'] == 'Income';
-                    final style = _getCategoryStyle(tx['title'], tx['type']);
-                    final txAmount = (tx['amount'] as num).toDouble();
-
-                    return Dismissible(
-                      key: Key(tx['id'].toString()), 
-                      direction: DismissDirection.endToStart, 
-                      background: Container(
-                        margin: const EdgeInsets.only(bottom: 12.0),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade400, 
-                          borderRadius: BorderRadius.circular(16.0),
-                        ),
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                        child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 28),
-                      ),
-                      onDismissed: (direction) async {
-                        await _dbHelper.deleteTransaction(tx['id']);
-                        _refreshTransactions();
-
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('"${tx['title']}" deleted successfully!'),
-                            backgroundColor: Colors.red.shade400,
-                          ),
-                        );
-                      },
-                      // 👈 2. මෙහිදී GestureDetector එකක් මඟින් දිගු වේලාවක් එබූ විට (onLongPress) සංස්කරණය කිරීමට අවස්ථාව සලසා ඇත
-                      child: GestureDetector(
-                        onLongPress: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddTransactionScreen(
-                                initialTransaction: tx, // පැරණි දත්ත සියල්ලම යවයි
-                                onAddTransaction: (title, amount, type) {
-                                  // Update කිරීමේ function එක ක්‍රියාත්මක කරවයි
-                                  _updateExistingTransaction(
-                                    tx['id'],
-                                    title,
-                                    amount,
-                                    type,
-                                    tx['date'],
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                          _refreshTransactions();
-                        },
-                        child: _buildTransactionItem(
-                          title: tx['title'],
-                          date: tx['date'],
-                          amount: '${isIncome ? '+' : '-'} Rs. ${txAmount.toStringAsFixed(2)}',
-                          amountColor: isIncome ? Colors.green.shade400 : Colors.red.shade400, 
-                          iconColor: style['color'], 
-                          icon: style['icon'], 
-                          isDark: isDark,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
+        // 🟢 Direct List widget insertion
+        listWidget,
       ],
     );
   }
@@ -597,7 +605,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
         leading: CircleAvatar(
           radius: 20,
-          backgroundColor: iconColor.withOpacity(0.08), 
+          backgroundColor: iconColor.withValues(alpha: 0.08), 
           child: Icon(icon, color: iconColor, size: 20), 
         ),
         title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF212529), fontSize: 15)),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/database/db_helper.dart';
 
 class BudgetGoalsScreen extends StatefulWidget {
-  const BudgetGoalsScreen({Key? key}) : super(key: key);
+  const BudgetGoalsScreen({super.key});
 
   @override
   State<BudgetGoalsScreen> createState() => _BudgetGoalsScreenState();
@@ -196,9 +196,9 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.redAccent.withOpacity(0.12),
+                          color: Colors.redAccent.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
                         ),
                         child: const Row(
                           children: [
@@ -217,9 +217,9 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.orangeAccent.withOpacity(0.12),
+                          color: Colors.orangeAccent.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.orangeAccent.withOpacity(0.5)),
+                          border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.5)),
                         ),
                         child: const Row(
                           children: [

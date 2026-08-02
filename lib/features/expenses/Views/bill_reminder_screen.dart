@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/database/db_helper.dart';
 
 class BillReminderScreen extends StatefulWidget {
-  const BillReminderScreen({Key? key}) : super(key: key);
+  const BillReminderScreen({super.key});
 
   @override
   State<BillReminderScreen> createState() => _BillReminderScreenState();
@@ -12,7 +12,7 @@ class _BillReminderScreenState extends State<BillReminderScreen> {
   final DBHelper _dbHelper = DBHelper();
 
   // Dummy / Initial Bills Data List
-  List<Map<String, dynamic>> _bills = [
+  final List<Map<String, dynamic>> _bills = [
     {
       'id': 1,
       'title': 'Electricity Bill',
@@ -122,8 +122,8 @@ class _BillReminderScreenState extends State<BillReminderScreen> {
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: isPaid
-                                  ? Colors.green.withOpacity(0.15)
-                                  : Colors.orange.withOpacity(0.15),
+                                  ? Colors.green.withValues(alpha: 0.15)
+                                  : Colors.orange.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -194,7 +194,7 @@ class _BillReminderScreenState extends State<BillReminderScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.15),
+                                    color: Colors.green.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Text(

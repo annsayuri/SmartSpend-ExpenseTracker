@@ -3,9 +3,7 @@ import 'package:path/path.dart';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Imports & Exports (Models access කිරීමට)
 import 'package:smartspend_expensetracker/features/expenses/model/user_model.dart';
-import 'package:smartspend_expensetracker/features/expenses/model/expense_model.dart';
 
 export 'package:smartspend_expensetracker/features/expenses/model/user_model.dart';
 export 'package:smartspend_expensetracker/features/expenses/model/expense_model.dart';
@@ -44,6 +42,7 @@ class DBHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
         title TEXT NOT NULL,
         amount REAL NOT NULL,
         category TEXT NOT NULL,
@@ -70,57 +69,61 @@ class DBHelper {
   // ---------------------------------------------------------------------------
 
   Future<bool> registerUser(String name, String email, String password, {Role role = Role.USER}) async {
-    final db = await database;
-    final existingUsers = await db.query(
-      'users',
-      where: 'LOWER(email) = ?',
-      whereArgs: [email.toLowerCase().trim()],
-    );
+    try {
+      final db = await database;
+      final existingUsers = await db.query(
+        'users',
+        where: 'LOWER(email) = ?',
+        whereArgs: [email.toLowerCase().trim()],
+      );
 
-    if (existingUsers.isNotEmpty) return false;
+      if (existingUsers.isNotEmpty) return false;
 
-    String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
-    UserModel newUser = UserModel(
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      password: hashedPassword,
-      role: role,
-    );
+      String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+      UserModel newUser = UserModel(
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password: hashedPassword,
+        role: role,
+      );
 
-    await db.insert('users', newUser.toMap());
-    return true;
+      await db.insert('users', newUser.toMap());
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<UserModel?> loginUser(String email, String password) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'users',
-      where: 'LOWER(email) = ?',
-      whereArgs: [email.toLowerCase().trim()],
-    );
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'users',
+        where: 'LOWER(email) = ?',
+        whereArgs: [email.toLowerCase().trim()],
+      );
 
-    if (maps.isNotEmpty) {
-      UserModel user = UserModel.fromMap(maps.first);
-      if (BCrypt.checkpw(password, user.password)) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('user_id', user.id!);
-        await prefs.setString('user_name', user.name);
-        await prefs.setString('user_email', user.email);
-        await prefs.setString('user_role', user.role.name);
-        await prefs.setBool('is_logged_in', true);
-        return user;
+      if (maps.isNotEmpty) {
+        UserModel user = UserModel.fromMap(maps.first);
+        if (BCrypt.checkpw(password, user.password)) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('user_id', user.id!);
+          await prefs.setString('user_name', user.name);
+          await prefs.setString('user_email', user.email);
+          await prefs.setString('user_role', user.role.name);
+          await prefs.setBool('is_logged_in', true);
+          return user;
+        }
       }
+    } catch (e) {
+      // Log error if needed
     }
     return null;
   }
 
   Future<void> logoutUser() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_id');
-    await prefs.remove('user_name');
-    await prefs.remove('user_email');
-    await prefs.remove('user_role');
-    await prefs.setBool('is_logged_in', false);
+    await prefs.clear(); // Session එක සම්පූර්ණයෙන්ම clear කරයි
   }
 
   Future<Map<String, dynamic>?> getCurrentUserSession() async {
@@ -149,7 +152,6 @@ class DBHelper {
     return await db.insert('transactions', transaction);
   }
 
-  // 💡 image_358e78 එකේ තිබුණු error එක විසඳීමට පහත function එක එකතු කළා
   Future<int> updateTransaction(Map<String, dynamic> transaction) async {
     final db = await database;
     return await db.update(
@@ -174,7 +176,6 @@ class DBHelper {
   // 🎯 BUDGET METHODS
   // ---------------------------------------------------------------------------
 
-  // 💡 image_358e1e එකේ තිබුණු error එක විසඳීමට budget functions එකතු කළා
   Future<double> getBudget() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble('budget_limit') ?? 0.0;
