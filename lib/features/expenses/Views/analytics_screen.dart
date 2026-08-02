@@ -4,7 +4,7 @@ import '../../../core/database/db_helper.dart';
 import '../../../core/services/export_service.dart';
 
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({Key? key}) : super(key: key);
+  const AnalyticsScreen({super.key});
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -230,7 +230,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
-                                color: _isExpenseMode ? Colors.redAccent.withOpacity(0.2) : Colors.transparent,
+                                color: _isExpenseMode ? Colors.redAccent.withValues(alpha: 0.2) : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(color: _isExpenseMode ? Colors.redAccent : Colors.transparent),
                               ),
@@ -258,7 +258,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
-                                color: !_isExpenseMode ? Colors.green.withOpacity(0.2) : Colors.transparent,
+                                color: !_isExpenseMode ? Colors.green.withValues(alpha: 0.2) : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(color: !_isExpenseMode ? Colors.green : Colors.transparent),
                               ),
