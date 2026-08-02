@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'core/database/db_helper.dart';
+import 'core/theme/theme_provider.dart'; // 🎨 Import ThemeProvider
 import 'features/expenses/views/login_screen.dart';
 import 'features/expenses/views/expense_list_screen.dart';
-
-// 🌗 Global Theme Notifier
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() async {
   // 1. Flutter Widgets Binding Initialize කිරීම
@@ -17,7 +16,13 @@ void main() async {
   final dbHelper = DBHelper();
   final userSession = await dbHelper.getCurrentUserSession();
 
-  runApp(MyApp(isLoggedIn: userSession != null));
+  runApp(
+    // 🎨 ThemeProvider එක මුළු App එකටම Provider එකක් ලෙස Wrap කිරීම
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: MyApp(isLoggedIn: userSession != null),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -27,41 +32,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeNotifier,
-      builder: (_, ThemeMode currentMode, _) {
-        return MaterialApp(
-          title: 'SmartSpend',
-          debugShowCheckedModeBanner: false,
+    // 🎨 ThemeProvider එක හරහා Dynamic ලෙස Theme එක ලබා ගැනීම
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
-          // ☀️ Light Theme Configuration
-          theme: ThemeData(
-            brightness: Brightness.light,
-            primarySwatch: Colors.deepPurple,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.deepPurple,
-              brightness: Brightness.light,
-            ),
-            useMaterial3: true,
-          ),
+    return MaterialApp(
+      title: 'SmartSpend',
+      debugShowCheckedModeBanner: false,
 
-          // 🌙 Dark Theme Configuration
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            primarySwatch: Colors.deepPurple,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.deepPurple,
-              brightness: Brightness.dark,
-            ),
-            useMaterial3: true,
-          ),
+      // ☀️ Light Theme Configuration
+      theme: ThemeProvider.lightTheme,
 
-          themeMode: currentMode,
+      // 🌙 Dark Theme Configuration
+      darkTheme: ThemeProvider.darkTheme,
 
-          // 🎯 User Login වී සිටී නම් ExpenseListScreen එකට, නැතහොත් LoginScreen එකට යොමු කරයි
-          home: isLoggedIn ? const ExpenseListScreen() : const LoginScreen(),
-        );
-      },
+      // 🔑 Provider එකේ තියෙන ThemeMode එක مستقیم ලෙස භාවිත කිරීම
+      themeMode: themeProvider.themeMode,
+
+      // 🎯 User Login වී සිටී නම් ExpenseListScreen එකට, නැතහොත් LoginScreen එකට යොමු කරයි
+      home: isLoggedIn ? const ExpenseListScreen() : const LoginScreen(),
     );
   }
 }
