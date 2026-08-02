@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'reset_password_screen.dart'; 
 import 'register_screen.dart'; 
+import 'expense_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,21 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  // 🔔 Error Message එක පෙන්වන Helper Function එක
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -60,6 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
               // Email Field
               TextField(
                 controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Email Address',
                   border: OutlineInputBorder(
@@ -117,10 +134,37 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 8),
 
-              // Login Button
+              // 🔑 Login Button (Validation සහිතව)
               ElevatedButton(
                 onPressed: () {
-                  // Login logic
+                  final email = _emailController.text.trim();
+                  final password = _passwordController.text.trim();
+
+                  // 1. Fields හිස්ද බලන්න
+                  if (email.isEmpty || password.isEmpty) {
+                    _showErrorSnackBar('Please enter both Email and Password! ⚠️');
+                    return;
+                  }
+
+                  // 2. Valid Email Format එකක්ද බලන්න
+                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+                    _showErrorSnackBar('Please enter a valid Email address! ✉️');
+                    return;
+                  }
+
+                  // 3. Password එකේ දිග බලන්න
+                  if (password.length < 6) {
+                    _showErrorSnackBar('Password must be at least 6 characters! 🔒');
+                    return;
+                  }
+
+                  // Validation සියල්ල සාර්ථක නම් Dashboard එකට යන්න:
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ExpenseListScreen(),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF673AB7),
@@ -144,7 +188,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Text("Don't have an account? "),
                   GestureDetector(
                     onTap: () {
-                      // ✅ මෙතන Navigation එක uncomment කරලා තියෙන්නේ:
                       Navigator.push(
                         context,
                         MaterialPageRoute(
