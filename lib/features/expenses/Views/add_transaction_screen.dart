@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../model/expense_model.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  final Function(String title, double amount, String type) onAddTransaction;
+  final Function(String title, double amount, String type, ExpenseCategory category) onAddTransaction;
   
   // පැරණි දත්ත ලබා ගැනීමට Map එකක් (Edit කිරීමේදී)
   final Map<String, dynamic>? initialTransaction;
@@ -20,21 +21,50 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _amountController;
-  String _selectedType = 'Income';
+  String _selectedType = 'Expense';
+  ExpenseCategory _selectedCategory = ExpenseCategory.food;
   bool _isEditing = false;
+
+  // Type අනුව පෙන්නන්න ඕනේ Category List එක
+  List<ExpenseCategory> get _availableCategories {
+    if (_selectedType == 'Income') {
+      return [
+        ExpenseCategory.salary,
+        ExpenseCategory.allowance,
+        ExpenseCategory.business,
+        ExpenseCategory.gift,
+        ExpenseCategory.bonus,
+        ExpenseCategory.wage,
+        ExpenseCategory.other,
+      ];
+    } else {
+      return [
+        ExpenseCategory.food,
+        ExpenseCategory.transport,
+        ExpenseCategory.bills,
+        ExpenseCategory.shopping,
+        ExpenseCategory.education,
+        ExpenseCategory.entertainment,
+        ExpenseCategory.healthcare,
+        ExpenseCategory.other,
+      ];
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     
-    // සංස්කරණය සඳහා දත්ත ලැබී ඇත්දැයි පරීක්ෂා කිරීම
     if (widget.initialTransaction != null) {
       _isEditing = true;
       _titleController = TextEditingController(text: widget.initialTransaction!['title']);
       _amountController = TextEditingController(text: widget.initialTransaction!['amount'].toString());
-      _selectedType = widget.initialTransaction!['type'];
+      _selectedType = widget.initialTransaction!['type'] ?? 'Expense';
+      
+      if (widget.initialTransaction!['category'] != null) {
+        _selectedCategory = ExpenseModel.parseCategory(widget.initialTransaction!['category']);
+      }
     } else {
-      // අලුතින් ඇතුළත් කරන්නේ නම් හිස්ව ආරම්භ කිරීම
       _titleController = TextEditingController();
       _amountController = TextEditingController();
     }
@@ -47,23 +77,58 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     super.dispose();
   }
 
+  String _getCategoryDisplayName(ExpenseCategory category) {
+    switch (category) {
+      case ExpenseCategory.food:
+        return 'Food';
+      case ExpenseCategory.transport:
+        return 'Transport';
+      case ExpenseCategory.bills:
+        return 'Bills';
+      case ExpenseCategory.shopping:
+        return 'Shopping';
+      case ExpenseCategory.education:
+        return 'Education';
+      case ExpenseCategory.entertainment:
+        return 'Entertainment';
+      case ExpenseCategory.healthcare:
+        return 'Healthcare';
+      case ExpenseCategory.salary:
+        return 'Salary';
+      case ExpenseCategory.allowance:
+        return 'Allowance';
+      case ExpenseCategory.business:
+        return 'Business';
+      case ExpenseCategory.gift:
+        return 'Gift';
+      case ExpenseCategory.bonus:
+        return 'Bonus';
+      case ExpenseCategory.wage:
+        return 'Wage';
+      case ExpenseCategory.other:
+        return 'Other';
+      default:
+        return 'Other';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Transaction ✏️' : 'Add Transaction 💰'),
+        title: Text(_isEditing ? 'Edit Transaction' : 'Add Transaction'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 📝 Title Field Validation
+              // Title Field
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
@@ -75,7 +140,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title 📝';
+                    return 'Please enter a title';
                   }
                   if (value.trim().length < 2) {
                     return 'Title must be at least 2 characters long';
@@ -85,7 +150,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
               const SizedBox(height: 16.0),
 
-              // 💰 Amount Field Validation
+              // Amount Field
               TextFormField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -98,7 +163,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter an amount 💰';
+                    return 'Please enter an amount';
                   }
                   final parsedAmount = double.tryParse(value.trim());
                   if (parsedAmount == null) {
@@ -112,12 +177,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
               const SizedBox(height: 16.0),
 
-              // 🏷️ Transaction Type Dropdown
+              // Transaction Type Dropdown
               DropdownButtonFormField<String>(
-                initialValue: _selectedType,
+                value: _selectedType,
                 decoration: InputDecoration(
                   labelText: 'Transaction Type',
-                  prefixIcon: const Icon(Icons.category_outlined),
+                  prefixIcon: const Icon(Icons.swap_horiz_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
                   ),
@@ -132,13 +197,42 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   if (newValue != null) {
                     setState(() {
                       _selectedType = newValue;
+                      _selectedCategory = _availableCategories.first;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16.0),
+
+              // Category Dropdown
+              DropdownButtonFormField<ExpenseCategory>(
+                value: _availableCategories.contains(_selectedCategory) 
+                    ? _selectedCategory 
+                    : _availableCategories.first,
+                decoration: InputDecoration(
+                  labelText: 'Category',
+                  prefixIcon: const Icon(Icons.category_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                ),
+                items: _availableCategories.map((ExpenseCategory category) {
+                  return DropdownMenuItem<ExpenseCategory>(
+                    value: category,
+                    child: Text(_getCategoryDisplayName(category)),
+                  );
+                }).toList(),
+                onChanged: (ExpenseCategory? newCategory) {
+                  if (newCategory != null) {
+                    setState(() {
+                      _selectedCategory = newCategory;
                     });
                   }
                 },
               ),
               const SizedBox(height: 28.0),
 
-              // 🚀 Submit Button
+              // Submit Button
               SizedBox(
                 height: 50.0,
                 child: ElevatedButton(
@@ -151,20 +245,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // 🚀 දත්ත ටික Callback එක හරහා යැවීම
                       widget.onAddTransaction(
                         _titleController.text.trim(),
                         double.parse(_amountController.text.trim()),
                         _selectedType,
+                        _selectedCategory,
                       );
 
-                      // 🎉 Success Message එකක් පෙන්වීම
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
                             _isEditing 
-                              ? 'Transaction updated successfully! ✨' 
-                              : 'Transaction added successfully! 🎉',
+                              ? 'Transaction updated successfully!' 
+                              : 'Transaction added successfully!',
                           ),
                           backgroundColor: Colors.green,
                           behavior: SnackBarBehavior.floating,
@@ -175,12 +268,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         ),
                       );
 
-                      // 🔙 Screen එක Close කිරීම
                       Navigator.pop(context);
                     }
                   },
                   child: Text(
-                    _isEditing ? 'Update Transaction ✏️' : 'Add Transaction 🚀',
+                    _isEditing ? 'Update Transaction' : 'Add Transaction',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
