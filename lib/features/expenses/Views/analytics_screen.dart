@@ -15,8 +15,9 @@ class AnalyticsScreen extends StatefulWidget {
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   bool _isWeekly = true;
   bool _isExpenseMode = true;
+  int _touchedIndex = -1;
 
-  // Category Names mapped without Emojis
+  // Category Names without Emojis
   String _getCategoryName(ExpenseCategory category) {
     switch (category) {
       // Expenses
@@ -31,7 +32,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       case ExpenseCategory.education:
         return 'Education';
       case ExpenseCategory.healthcare:
-        return 'Healthcare';
+        return 'Medical';
+      case ExpenseCategory.entertainment:
+        return 'Entertainment';
 
       // Income
       case ExpenseCategory.salary:
@@ -51,6 +54,53 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       default:
         return 'Other';
     }
+  }
+
+  // Get display categories based on mode
+  List<String> _getDisplayCategories() {
+    if (_isExpenseMode) {
+      return [
+        'Food',
+        'Transport',
+        'Bills',
+        'Shopping',
+        'Education',
+        'Medical',
+        'Entertainment',
+        'Other'
+      ];
+    } else {
+      return [
+        'Salary',
+        'Allowance',
+        'Business',
+        'Gift',
+        'Bonus',
+        'Wage',
+        'Other'
+      ];
+    }
+  }
+
+  // Get category color
+  Color _getCategoryColor(String category, bool isDark) {
+    final colors = {
+      'Food': Colors.orange,
+      'Transport': Colors.blue,
+      'Bills': Colors.red,
+      'Shopping': Colors.purple,
+      'Education': Colors.teal,
+      'Medical': Colors.pink,
+      'Entertainment': Colors.amber,
+      'Salary': Colors.green,
+      'Allowance': Colors.cyan,
+      'Business': Colors.indigo,
+      'Gift': Colors.pink.shade300,
+      'Bonus': Colors.yellow.shade700,
+      'Wage': Colors.brown,
+      'Other': Colors.grey,
+    };
+    return colors[category] ?? Colors.grey;
   }
 
   void _showExportOptions(
@@ -124,34 +174,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final provider = Provider.of<ExpenseProvider>(context);
     final allTx = provider.transactions;
 
-    // 1. Initialize Category Map
-    Map<String, double> tempCategoryMap = _isExpenseMode
-        ? {
-            'Food': 0.0,
-            'Transport': 0.0,
-            'Bills': 0.0,
-            'Shopping': 0.0,
-            'Education': 0.0,
-            'Healthcare': 0.0,
-            'Other': 0.0,
-          }
-        : {
-            'Salary': 0.0,
-            'Allowance': 0.0,
-            'Business': 0.0,
-            'Gift': 0.0,
-            'Bonus': 0.0,
-            'Wage': 0.0,
-            'Other': 0.0,
-          };
+    // Get display categories
+    final displayCategories = _getDisplayCategories();
+
+    // Initialize Category Map with all display categories
+    Map<String, double> categoryMap = {};
+    for (var cat in displayCategories) {
+      categoryMap[cat] = 0.0;
+    }
 
     double total = 0.0;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final TransactionType targetType =
+    final targetType =
         _isExpenseMode ? TransactionType.expense : TransactionType.income;
 
-    // 2. Filter & Calculate totals
+    // Filter & Calculate totals
     for (var tx in allTx) {
       if (tx.type == targetType) {
         bool includeTx = false;
@@ -171,15 +209,30 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         if (includeTx) {
           total += tx.amount;
           String categoryLabel = _getCategoryName(tx.category);
-          tempCategoryMap[categoryLabel] =
-              (tempCategoryMap[categoryLabel] ?? 0.0) + tx.amount;
+          if (categoryMap.containsKey(categoryLabel)) {
+            categoryMap[categoryLabel] =
+                (categoryMap[categoryLabel] ?? 0.0) + tx.amount;
+          } else {
+            // If category not in map, add to "Other"
+            categoryMap['Other'] = (categoryMap['Other'] ?? 0.0) + tx.amount;
+          }
         }
       }
     }
 
-    final List<String> categories = tempCategoryMap.keys.toList();
+    // Get non-zero categories for bar chart
+    final List<MapEntry<String, double>> nonZeroEntries =
+        categoryMap.entries.where((e) => e.value > 0).toList();
+
+    // Sort by amount descending
+    nonZeroEntries.sort((a, b) => b.value.compareTo(a.value));
+
+    final List<String> categories =
+        nonZeroEntries.map((e) => e.key).toList();
+    final List<double> amounts = nonZeroEntries.map((e) => e.value).toList();
+
     final Color activeThemeColor =
-        _isExpenseMode ? Colors.redAccent : Colors.green;
+        _isExpenseMode ? Colors.orangeAccent : Colors.greenAccent.shade700;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -231,13 +284,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
                                 color: _isExpenseMode
-                                    ? Colors.redAccent.withValues(alpha: 0.2)
+                                    ? Colors.redAccent.withValues(alpha: 0.15)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                     color: _isExpenseMode
                                         ? Colors.redAccent
-                                        : Colors.transparent),
+                                        : Colors.transparent,
+                                    width: 1.5),
                               ),
                               child: Center(
                                 child: Text(
@@ -266,13 +320,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
                                 color: !_isExpenseMode
-                                    ? Colors.green.withValues(alpha: 0.2)
+                                    ? Colors.green.withValues(alpha: 0.15)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                     color: !_isExpenseMode
                                         ? Colors.green
-                                        : Colors.transparent),
+                                        : Colors.transparent,
+                                    width: 1.5),
                               ),
                               child: Center(
                                 child: Text(
@@ -383,10 +438,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Bar Chart Card Overview
+                  // ═══════════════════════════════════════
+                  // 🔥 IMPROVED BAR CHART WITH ALL CATEGORIES
+                  // ═══════════════════════════════════════
                   Card(
                     color: cardColor,
-                    elevation: 0,
+                    elevation: 2,
+                    shadowColor: isDark ? Colors.black54 : Colors.grey.shade200,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                       side: BorderSide(
@@ -415,94 +473,234 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 'Total: Rs. ${total.toStringAsFixed(2)}',
                                 style: TextStyle(
                                     color: activeThemeColor,
-                                    fontSize: 14,
+                                    fontSize: 16,
                                     fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 25),
-                          SizedBox(
-                            height: 240,
-                            child: BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment.spaceAround,
-                                maxY: (total > 0 ? total * 1.2 : 1000),
-                                barTouchData: BarTouchData(enabled: true),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  topTitles: const AxisTitles(
-                                      sideTitles:
-                                          SideTitles(showTitles: false)),
-                                  rightTitles: const AxisTitles(
-                                      sideTitles:
-                                          SideTitles(showTitles: false)),
-                                  leftTitles: const AxisTitles(
-                                      sideTitles:
-                                          SideTitles(showTitles: false)),
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 45,
-                                      getTitlesWidget:
-                                          (double value, TitleMeta meta) {
-                                        int index = value.toInt();
-                                        if (index >= 0 &&
-                                            index < categories.length) {
-                                          return SideTitleWidget(
-                                            meta: meta,
-                                            space: 6,
-                                            child: Transform.rotate(
-                                              angle: -0.6,
-                                              child: Text(
-                                                categories[index],
-                                                style: TextStyle(
-                                                  color: subTextColor,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
+                          const SizedBox(height: 20),
+
+                          // If no data, show empty state
+                          if (total == 0)
+                            SizedBox(
+                              height: 200,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _isExpenseMode
+                                          ? Icons.money_off
+                                          : Icons.attach_money,
+                                      size: 48,
+                                      color: subTextColor.withValues(alpha: 0.5),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      _isExpenseMode
+                                          ? 'No expenses recorded in this period'
+                                          : 'No income recorded in this period',
+                                      style: TextStyle(
+                                        color: subTextColor,
+                                        fontSize: 14,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            SizedBox(
+                              height: 280,
+                              child: BarChart(
+                                BarChartData(
+                                  alignment: BarChartAlignment.spaceAround,
+                                  maxY: (amounts.isNotEmpty
+                                          ? amounts.reduce((a, b) => a > b ? a : b)
+                                          : 0) *
+                                      1.4,
+                                  minY: 0,
+                                  barTouchData: BarTouchData(
+                                    enabled: true,
+                                    touchTooltipData: BarTouchTooltipData(
+                                      getTooltipColor: (group) => isDark
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.shade200,
+                                      getTooltipItem: (group, groupIndex, rod,
+                                          rodIndex) {
+                                        return BarTooltipItem(
+                                          '${categories[group.x.toInt()]}\n',
+                                          const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            color: Colors.black87,
+                                          ),
+                                          children: [
+                                            TextSpan(
+                                              text:
+                                                  'Rs. ${rod.toY.toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                                color: Colors.deepPurple,
                                               ),
                                             ),
-                                          );
-                                        }
-                                        return const SizedBox.shrink();
+                                          ],
+                                        );
                                       },
                                     ),
+                                    touchCallback:
+                                        (FlTouchEvent event, barTouchResponse) {
+                                      setState(() {
+                                        if (event is FlTapUpEvent &&
+                                            barTouchResponse != null &&
+                                            barTouchResponse.spot != null) {
+                                          _touchedIndex = barTouchResponse
+                                              .spot!.touchedBarGroupIndex;
+                                        } else {
+                                          _touchedIndex = -1;
+                                        }
+                                      });
+                                    },
                                   ),
-                                ),
-                                gridData: const FlGridData(show: false),
-                                borderData: FlBorderData(show: false),
-                                barGroups:
-                                    List.generate(categories.length, (index) {
-                                  double val =
-                                      tempCategoryMap[categories[index]] ?? 0.0;
-                                  return BarChartGroupData(
-                                    x: index,
-                                    barRods: [
-                                      BarChartRodData(
-                                        toY: val,
-                                        color: _isExpenseMode
-                                            ? Colors.orangeAccent
-                                            : Colors.greenAccent.shade700,
-                                        width: 16,
-                                        borderRadius: const BorderRadius.only(
-                                          topLeft: Radius.circular(6),
-                                          topRight: Radius.circular(6),
-                                        ),
+                                  titlesData: FlTitlesData(
+                                    show: true,
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 55,
+                                        getTitlesWidget:
+                                            (double value, TitleMeta meta) {
+                                          int index = value.toInt();
+                                          if (index >= 0 &&
+                                              index < categories.length) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                  top: 8.0),
+                                              child: Transform.rotate(
+                                                angle: -0.5,
+                                                child: Text(
+                                                  categories[index],
+                                                  style: TextStyle(
+                                                    color: textColor,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          return const SizedBox.shrink();
+                                        },
                                       ),
-                                    ],
-                                  );
-                                }),
+                                    ),
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 50,
+                                        getTitlesWidget:
+                                            (double value, TitleMeta meta) {
+                                          if (value == 0) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          return Text(
+                                            'Rs.${value.toInt()}',
+                                            style: TextStyle(
+                                              color: subTextColor,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    rightTitles: const AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false)),
+                                    topTitles: const AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false)),
+                                  ),
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawHorizontalLine: true,
+                                    drawVerticalLine: false,
+                                    horizontalInterval: amounts.isNotEmpty
+                                        ? (amounts.reduce((a, b) => a > b ? a : b) *
+                                            1.4) /
+                                            5
+                                        : 100,
+                                    getDrawingHorizontalLine: (value) {
+                                      return FlLine(
+                                        color: isDark
+                                            ? Colors.white10
+                                            : Colors.grey.shade200,
+                                        strokeWidth: 1,
+                                        dashArray: [5, 5],
+                                      );
+                                    },
+                                  ),
+                                  borderData: FlBorderData(
+                                    show: true,
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: isDark
+                                            ? Colors.white24
+                                            : Colors.grey.shade300,
+                                        width: 1,
+                                      ),
+                                      left: BorderSide(
+                                        color: isDark
+                                            ? Colors.white24
+                                            : Colors.grey.shade300,
+                                        width: 1,
+                                      ),
+                                      right: BorderSide.none,
+                                      top: BorderSide.none,
+                                    ),
+                                  ),
+                                  barGroups: List.generate(categories.length,
+                                      (index) {
+                                    double val = amounts[index];
+                                    bool isTouched = _touchedIndex == index;
+                                    String category = categories[index];
+                                    Color barColor =
+                                        _getCategoryColor(category, isDark);
+
+                                    return BarChartGroupData(
+                                      x: index,
+                                      barRods: [
+                                        BarChartRodData(
+                                          toY: val,
+                                          color: isTouched
+                                              ? Colors.deepPurple
+                                              : barColor,
+                                          width: isTouched ? 30 : 24,
+                                          borderRadius:
+                                              const BorderRadius.only(
+                                            topLeft: Radius.circular(8),
+                                            topRight: Radius.circular(8),
+                                          ),
+                                        ),
+                                      ],
+                                      showingTooltipIndicators: isTouched
+                                          ? [0]
+                                          : [],
+                                    );
+                                  }),
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
 
-                  // Category Details
+                  // Category Details List
                   Text(
                     _isExpenseMode
                         ? 'CATEGORY SPENDING (EXPENSE)'
@@ -530,12 +728,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     )
                   else
                     Column(
-                      children: categories.map((category) {
-                        double amount = tempCategoryMap[category] ?? 0.0;
-                        if (amount == 0) return const SizedBox.shrink();
-
-                        double percentage =
-                            (total > 0) ? (amount / total) : 0.0;
+                      children: categories.asMap().entries.map((entry) {
+                        int index = entry.key;
+                        String category = entry.value;
+                        double amount = amounts[index];
+                        double percentage = (total > 0) ? (amount / total) : 0.0;
+                        Color barColor =
+                            _getCategoryColor(category, isDark);
 
                         return Card(
                           color: cardColor,
@@ -558,17 +757,34 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      category,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: textColor,
-                                          fontSize: 15),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 12,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            color: index == _touchedIndex
+                                                ? Colors.deepPurple
+                                                : barColor,
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          category,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: textColor,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                     Text(
                                       'Rs. ${amount.toStringAsFixed(2)}',
                                       style: TextStyle(
-                                        color: activeThemeColor,
+                                        color: barColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15,
                                       ),
@@ -589,8 +805,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                               : Colors.grey.shade200,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                                  activeThemeColor),
-                                          minHeight: 6,
+                                                  barColor),
+                                          minHeight: 8,
                                         ),
                                       ),
                                     ),
@@ -598,9 +814,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     Text(
                                       '${(percentage * 100).toStringAsFixed(1)}%',
                                       style: TextStyle(
-                                          color: subTextColor,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold),
+                                        color: subTextColor,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),

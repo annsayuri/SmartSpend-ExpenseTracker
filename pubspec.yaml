@@ -34,7 +34,10 @@ dependencies:
   # Chrome (Web) එකේ SQLite වැඩ කිරීමට:
   sqflite_common_ffi: ^2.3.4
   sqflite_common_ffi_web: ^0.4.5+4
+  
+  # 📊 Chart Package (Bar Graph සඳහා)
   fl_chart: ^1.2.0
+  
   shared_preferences: ^2.3.5
   provider: ^6.1.2
 
