@@ -284,7 +284,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
                                 color: _isExpenseMode
-                                    ? Colors.redAccent.withValues(alpha: 0.15)
+                                    ? Colors.redAccent.withAlpha(38)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
@@ -320,7 +320,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
                                 color: !_isExpenseMode
-                                    ? Colors.green.withValues(alpha: 0.15)
+                                    ? Colors.green.withAlpha(38)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
@@ -493,7 +493,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                           ? Icons.money_off
                                           : Icons.attach_money,
                                       size: 48,
-                                      color: subTextColor.withValues(alpha: 0.5),
+                                      color: subTextColor.withAlpha(128),
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
