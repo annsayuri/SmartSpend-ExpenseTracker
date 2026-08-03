@@ -60,6 +60,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (_profileImage != null) {
       await prefs.setString('profile_image_path', _profileImage!.path);
+    } else {
+      await prefs.remove('profile_image_path');
     }
 
     if (mounted) {
@@ -87,7 +89,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // 🖼️ Image Selection Bottom Sheet
+  // 🗑️ Remove Profile Image Function
+  Future<void> _removeProfileImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('profile_image_path');
+
+    setState(() {
+      _profileImage = null;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile photo removed! 🗑️'),
+          backgroundColor: Colors.orangeAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  // 🖼️ Image Selection Bottom Sheet (With Remove Option)
   void _showImagePickerBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -118,6 +140,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _pickImage(ImageSource.camera);
                 },
               ),
+              
+              // 🗑️ Photo එකක් තියෙනවා නම් විතරක් Remove Option එක පෙන්වයි:
+              if (_profileImage != null) ...[
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  title: const Text('Remove Current Photo', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removeProfileImage();
+                  },
+                ),
+              ],
             ],
           ),
         );
@@ -199,7 +234,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
-                  // Password updating logic (e.g. SharedPreferences or Database)
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setString('user_password', newPasswordController.text);
                   
@@ -383,7 +417,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         // Read-Only Email Address
                         TextField(
                           controller: _emailController,
-                          enabled: false, // Read-Only Status
+                          enabled: false,
                           style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
                           decoration: InputDecoration(
                             labelText: 'Email Address (Registered)',
