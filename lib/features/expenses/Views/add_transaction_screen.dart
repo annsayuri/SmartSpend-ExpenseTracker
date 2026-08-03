@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import '../model/expense_model.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  final Function(String title, double amount, String type, ExpenseCategory category) onAddTransaction;
-  
-  // පැරණි දත්ත ලබා ගැනීමට Map එකක් (Edit කිරීමේදී)
+  final Function(ExpenseModel) onAddTransaction;
   final Map<String, dynamic>? initialTransaction;
 
   const AddTransactionScreen({
-    super.key, 
+    super.key,
     required this.onAddTransaction,
     this.initialTransaction,
   });
@@ -25,7 +23,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   ExpenseCategory _selectedCategory = ExpenseCategory.food;
   bool _isEditing = false;
 
-  // Type අනුව පෙන්නන්න ඕනේ Category List එක
   List<ExpenseCategory> get _availableCategories {
     if (_selectedType == 'Income') {
       return [
@@ -54,15 +51,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     if (widget.initialTransaction != null) {
       _isEditing = true;
-      _titleController = TextEditingController(text: widget.initialTransaction!['title']);
-      _amountController = TextEditingController(text: widget.initialTransaction!['amount'].toString());
+      _titleController =
+          TextEditingController(text: widget.initialTransaction!['title']);
+      _amountController = TextEditingController(
+          text: widget.initialTransaction!['amount'].toString());
       _selectedType = widget.initialTransaction!['type'] ?? 'Expense';
-      
+
       if (widget.initialTransaction!['category'] != null) {
-        _selectedCategory = ExpenseModel.parseCategory(widget.initialTransaction!['category']);
+        _selectedCategory =
+            ExpenseModel.parseCategory(widget.initialTransaction!['category']);
       }
     } else {
       _titleController = TextEditingController();
@@ -75,41 +75,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     _titleController.dispose();
     _amountController.dispose();
     super.dispose();
-  }
-
-  String _getCategoryDisplayName(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.food:
-        return 'Food';
-      case ExpenseCategory.transport:
-        return 'Transport';
-      case ExpenseCategory.bills:
-        return 'Bills';
-      case ExpenseCategory.shopping:
-        return 'Shopping';
-      case ExpenseCategory.education:
-        return 'Education';
-      case ExpenseCategory.entertainment:
-        return 'Entertainment';
-      case ExpenseCategory.healthcare:
-        return 'Healthcare';
-      case ExpenseCategory.salary:
-        return 'Salary';
-      case ExpenseCategory.allowance:
-        return 'Allowance';
-      case ExpenseCategory.business:
-        return 'Business';
-      case ExpenseCategory.gift:
-        return 'Gift';
-      case ExpenseCategory.bonus:
-        return 'Bonus';
-      case ExpenseCategory.wage:
-        return 'Wage';
-      case ExpenseCategory.other:
-        return 'Other';
-      default:
-        return 'Other';
-    }
   }
 
   @override
@@ -153,7 +118,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               // Amount Field
               TextFormField(
                 controller: _amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   labelText: 'Amount',
                   prefixIcon: const Icon(Icons.attach_money_outlined),
@@ -206,8 +172,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
               // Category Dropdown
               DropdownButtonFormField<ExpenseCategory>(
-                value: _availableCategories.contains(_selectedCategory) 
-                    ? _selectedCategory 
+                value: _availableCategories.contains(_selectedCategory)
+                    ? _selectedCategory
                     : _availableCategories.first,
                 decoration: InputDecoration(
                   labelText: 'Category',
@@ -219,7 +185,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 items: _availableCategories.map((ExpenseCategory category) {
                   return DropdownMenuItem<ExpenseCategory>(
                     value: category,
-                    child: Text(_getCategoryDisplayName(category)),
+                    child: Text(ExpenseModel.getCategoryDisplayName(category)),
                   );
                 }).toList(),
                 onChanged: (ExpenseCategory? newCategory) {
@@ -245,19 +211,26 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      widget.onAddTransaction(
-                        _titleController.text.trim(),
-                        double.parse(_amountController.text.trim()),
-                        _selectedType,
-                        _selectedCategory,
+                      // Create ExpenseModel object
+                      final expense = ExpenseModel(
+                        title: _titleController.text.trim(),
+                        amount: double.parse(_amountController.text.trim()),
+                        date: DateTime.now(),
+                        category: _selectedCategory,
+                        type: _selectedType == 'Income'
+                            ? TransactionType.income
+                            : TransactionType.expense,
                       );
+
+                      // Pass the full ExpenseModel to parent
+                      widget.onAddTransaction(expense);
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            _isEditing 
-                              ? 'Transaction updated successfully!' 
-                              : 'Transaction added successfully!',
+                            _isEditing
+                                ? 'Transaction updated successfully!'
+                                : 'Transaction added successfully!',
                           ),
                           backgroundColor: Colors.green,
                           behavior: SnackBarBehavior.floating,
@@ -273,7 +246,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   },
                   child: Text(
                     _isEditing ? 'Update Transaction' : 'Add Transaction',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

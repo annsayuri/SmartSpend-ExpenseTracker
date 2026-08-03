@@ -42,13 +42,87 @@ class ExpenseModel {
     this.type = TransactionType.expense,
   });
 
-  /// Robust helper to parse category from any DB format (String, Enum Name, Index, etc.)
+  /// Get display name for category
+  static String getCategoryDisplayName(ExpenseCategory category) {
+    switch (category) {
+      // Expenses
+      case ExpenseCategory.food:
+        return 'Food';
+      case ExpenseCategory.transport:
+        return 'Transport';
+      case ExpenseCategory.bills:
+        return 'Bills';
+      case ExpenseCategory.shopping:
+        return 'Shopping';
+      case ExpenseCategory.education:
+        return 'Education';
+      case ExpenseCategory.entertainment:
+        return 'Entertainment';
+      case ExpenseCategory.healthcare:
+        return 'Healthcare';
+
+      // Income
+      case ExpenseCategory.salary:
+        return 'Salary';
+      case ExpenseCategory.allowance:
+        return 'Allowance';
+      case ExpenseCategory.business:
+        return 'Business';
+      case ExpenseCategory.gift:
+        return 'Gift';
+      case ExpenseCategory.bonus:
+        return 'Bonus';
+      case ExpenseCategory.wage:
+        return 'Wage';
+
+      case ExpenseCategory.other:
+      default:
+        return 'Other';
+    }
+  }
+
+  /// Get category from display name
+  static ExpenseCategory getCategoryFromDisplayName(String displayName) {
+    switch (displayName) {
+      case 'Food':
+        return ExpenseCategory.food;
+      case 'Transport':
+        return ExpenseCategory.transport;
+      case 'Bills':
+        return ExpenseCategory.bills;
+      case 'Shopping':
+        return ExpenseCategory.shopping;
+      case 'Education':
+        return ExpenseCategory.education;
+      case 'Entertainment':
+        return ExpenseCategory.entertainment;
+      case 'Healthcare':
+        return ExpenseCategory.healthcare;
+      case 'Salary':
+        return ExpenseCategory.salary;
+      case 'Allowance':
+        return ExpenseCategory.allowance;
+      case 'Business':
+        return ExpenseCategory.business;
+      case 'Gift':
+        return ExpenseCategory.gift;
+      case 'Bonus':
+        return ExpenseCategory.bonus;
+      case 'Wage':
+        return ExpenseCategory.wage;
+      case 'Other':
+      default:
+        return ExpenseCategory.other;
+    }
+  }
+
+  /// Robust helper to parse category from any DB format
   static ExpenseCategory parseCategory(dynamic rawCategory) {
     if (rawCategory == null) return ExpenseCategory.other;
 
     final String str = rawCategory.toString().trim().toLowerCase();
 
-    // 1. Direct name or Enum string match (e.g., "bills", "expensecategory.bills")
+    // 1. Direct name or Enum string match
     for (var cat in ExpenseCategory.values) {
       if (cat.name.toLowerCase() == str ||
           'expensecategory.${cat.name.toLowerCase()}' == str) {
@@ -56,7 +130,7 @@ class ExpenseModel {
       }
     }
 
-    // 2. Custom mappings if saved via Display Titles/Synonyms in DB
+    // 2. Custom mappings
     switch (str) {
       case 'food':
         return ExpenseCategory.food;
@@ -91,7 +165,7 @@ class ExpenseModel {
         return ExpenseCategory.wage;
     }
 
-    // 3. Fallback for Integer Index saved in DB (e.g., 0, 1, 2)
+    // 3. Fallback for Integer Index
     final intIndex = int.tryParse(str);
     if (intIndex != null &&
         intIndex >= 0 &&
