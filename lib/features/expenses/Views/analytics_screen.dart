@@ -16,49 +16,48 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   bool _isWeekly = true;
   bool _isExpenseMode = true;
 
-  // 🟢 Emoji Names mapped for all your Categories!
+  // Category Names mapped without Emojis
   String _getCategoryName(ExpenseCategory category) {
     switch (category) {
       // Expenses
       case ExpenseCategory.food:
-        return 'Food 🍕';
+        return 'Food';
       case ExpenseCategory.transport:
-        return 'Transport 🚗';
+        return 'Transport';
       case ExpenseCategory.bills:
-        return 'Bills 💡';
+        return 'Bills';
       case ExpenseCategory.shopping:
-        return 'Shopping 🛍️';
+        return 'Shopping';
       case ExpenseCategory.education:
-        return 'Education 📚';
-      case ExpenseCategory.entertainment:
-        return 'Entertainment 🎬';
+        return 'Education';
       case ExpenseCategory.healthcare:
-        return 'Healthcare 🏥';
+        return 'Healthcare';
 
       // Income
       case ExpenseCategory.salary:
-        return 'Salary 💵';
+        return 'Salary';
       case ExpenseCategory.allowance:
-        return 'Allowance 👛';
+        return 'Allowance';
       case ExpenseCategory.business:
-        return 'Business 💼';
+        return 'Business';
       case ExpenseCategory.gift:
-        return 'Gift 🎁';
+        return 'Gift';
       case ExpenseCategory.bonus:
-        return 'Bonus 🪙';
+        return 'Bonus';
       case ExpenseCategory.wage:
-        return 'Wage 💰';
+        return 'Wage';
 
       case ExpenseCategory.other:
       default:
-        return 'Other 📦';
+        return 'Other';
     }
   }
 
-  void _showExportOptions(BuildContext context, List<ExpenseModel> rawTransactions) {
+  void _showExportOptions(
+      BuildContext context, List<ExpenseModel> rawTransactions) {
     if (rawTransactions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No transactions available to export! ⚠️')),
+        const SnackBar(content: Text('No transactions available to export!')),
       );
       return;
     }
@@ -75,13 +74,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Export Transactions 📄',
+                'Export Transactions',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               ListTile(
-                leading: const Icon(Icons.picture_as_pdf, color: Colors.redAccent, size: 30),
-                title: const Text('Export as PDF Document 📑', style: TextStyle(fontWeight: FontWeight.bold)),
+                leading: const Icon(Icons.picture_as_pdf,
+                    color: Colors.redAccent, size: 30),
+                title: const Text('Export as PDF Document',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text('Download formatted PDF report'),
                 onTap: () {
                   Navigator.pop(context);
@@ -92,8 +93,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.table_chart, color: Colors.green, size: 30),
-                title: const Text('Export as CSV Spreadsheet 📊', style: TextStyle(fontWeight: FontWeight.bold)),
+                leading: const Icon(Icons.table_chart,
+                    color: Colors.green, size: 30),
+                title: const Text('Export as CSV Spreadsheet',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text('Compatible with Excel & Google Sheets'),
                 onTap: () async {
                   Navigator.pop(context);
@@ -112,7 +115,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA);
+    final backgroundColor =
+        isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA);
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.grey : Colors.grey.shade600;
@@ -120,17 +124,42 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final provider = Provider.of<ExpenseProvider>(context);
     final allTx = provider.transactions;
 
-    Map<String, double> tempCategoryMap = {};
-    double total = 0.0;
-    DateTime now = DateTime.now();
-    TransactionType targetType = _isExpenseMode ? TransactionType.expense : TransactionType.income;
+    // 1. Initialize Category Map
+    Map<String, double> tempCategoryMap = _isExpenseMode
+        ? {
+            'Food': 0.0,
+            'Transport': 0.0,
+            'Bills': 0.0,
+            'Shopping': 0.0,
+            'Education': 0.0,
+            'Healthcare': 0.0,
+            'Other': 0.0,
+          }
+        : {
+            'Salary': 0.0,
+            'Allowance': 0.0,
+            'Business': 0.0,
+            'Gift': 0.0,
+            'Bonus': 0.0,
+            'Wage': 0.0,
+            'Other': 0.0,
+          };
 
+    double total = 0.0;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final TransactionType targetType =
+        _isExpenseMode ? TransactionType.expense : TransactionType.income;
+
+    // 2. Filter & Calculate totals
     for (var tx in allTx) {
       if (tx.type == targetType) {
         bool includeTx = false;
+        final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
+
         if (_isWeekly) {
-          Duration difference = now.difference(tx.date);
-          if (difference.inDays <= 7 && difference.inDays >= 0) {
+          final differenceInDays = today.difference(txDate).inDays;
+          if (differenceInDays >= 0 && differenceInDays < 7) {
             includeTx = true;
           }
         } else {
@@ -142,19 +171,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         if (includeTx) {
           total += tx.amount;
           String categoryLabel = _getCategoryName(tx.category);
-          tempCategoryMap[categoryLabel] = (tempCategoryMap[categoryLabel] ?? 0) + tx.amount;
+          tempCategoryMap[categoryLabel] =
+              (tempCategoryMap[categoryLabel] ?? 0.0) + tx.amount;
         }
       }
     }
 
     final List<String> categories = tempCategoryMap.keys.toList();
-    final Color activeThemeColor = _isExpenseMode ? Colors.redAccent : Colors.green;
+    final Color activeThemeColor =
+        _isExpenseMode ? Colors.redAccent : Colors.green;
 
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Advanced Analytics 📊', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
+        title: const Text('Advanced Analytics',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor:
+            isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -179,7 +212,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     decoration: BoxDecoration(
                       color: cardColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+                      border: Border.all(
+                          color: isDark
+                              ? Colors.white10
+                              : const Color(0xFFE9ECEF)),
                     ),
                     child: Row(
                       children: [
@@ -190,7 +226,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 setState(() => _isExpenseMode = true);
                               }
                             },
-                            child: Container(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
                                 color: _isExpenseMode
@@ -198,13 +235,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                    color: _isExpenseMode ? Colors.redAccent : Colors.transparent),
+                                    color: _isExpenseMode
+                                        ? Colors.redAccent
+                                        : Colors.transparent),
                               ),
                               child: Center(
                                 child: Text(
-                                  'Expenses 💸',
+                                  'Expenses',
                                   style: TextStyle(
-                                    color: _isExpenseMode ? Colors.redAccent : subTextColor,
+                                    color: _isExpenseMode
+                                        ? Colors.redAccent
+                                        : subTextColor,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -220,7 +261,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 setState(() => _isExpenseMode = false);
                               }
                             },
-                            child: Container(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
                                 color: !_isExpenseMode
@@ -228,13 +270,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                    color: !_isExpenseMode ? Colors.green : Colors.transparent),
+                                    color: !_isExpenseMode
+                                        ? Colors.green
+                                        : Colors.transparent),
                               ),
                               child: Center(
                                 child: Text(
-                                  'Income 💰',
+                                  'Income',
                                   style: TextStyle(
-                                    color: !_isExpenseMode ? Colors.green : subTextColor,
+                                    color: !_isExpenseMode
+                                        ? Colors.green
+                                        : subTextColor,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -253,8 +299,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     children: [
                       Text(
                         _isWeekly
-                            ? (_isExpenseMode ? 'LAST 7 DAYS EXPENSES 🗓️' : 'LAST 7 DAYS INCOME 🗓️')
-                            : (_isExpenseMode ? 'THIS MONTH EXPENSES 📅' : 'THIS MONTH INCOME 📅'),
+                            ? (_isExpenseMode
+                                ? 'LAST 7 DAYS EXPENSES'
+                                : 'LAST 7 DAYS INCOME')
+                            : (_isExpenseMode
+                                ? 'THIS MONTH EXPENSES'
+                                : 'THIS MONTH INCOME'),
                         style: TextStyle(
                           color: subTextColor,
                           fontSize: 12,
@@ -266,7 +316,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         decoration: BoxDecoration(
                           color: cardColor,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+                          border: Border.all(
+                              color: isDark
+                                  ? Colors.white10
+                                  : const Color(0xFFE9ECEF)),
                         ),
                         child: Row(
                           children: [
@@ -277,15 +330,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 }
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: _isWeekly ? Colors.deepPurple : Colors.transparent,
+                                  color: _isWeekly
+                                      ? Colors.deepPurple
+                                      : Colors.transparent,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
                                   'Weekly',
                                   style: TextStyle(
-                                    color: _isWeekly ? Colors.white : subTextColor,
+                                    color:
+                                        _isWeekly ? Colors.white : subTextColor,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -299,15 +356,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 }
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: !_isWeekly ? Colors.deepPurple : Colors.transparent,
+                                  color: !_isWeekly
+                                      ? Colors.deepPurple
+                                      : Colors.transparent,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
                                   'Monthly',
                                   style: TextStyle(
-                                    color: !_isWeekly ? Colors.white : subTextColor,
+                                    color: !_isWeekly
+                                        ? Colors.white
+                                        : subTextColor,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -327,7 +389,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+                      side: BorderSide(
+                          color: isDark
+                              ? Colors.white10
+                              : const Color(0xFFE9ECEF)),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(20.0),
@@ -338,18 +403,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                _isExpenseMode ? 'Expense Overview 📈' : 'Income Overview 📉',
-                                style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.bold),
+                                _isExpenseMode
+                                    ? 'Expense Overview'
+                                    : 'Income Overview',
+                                style: TextStyle(
+                                    color: subTextColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 'Total: Rs. ${total.toStringAsFixed(2)}',
-                                style: TextStyle(color: activeThemeColor, fontSize: 13, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    color: activeThemeColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
                           const SizedBox(height: 25),
                           SizedBox(
-                            height: 220,
+                            height: 240,
                             child: BarChart(
                               BarChartData(
                                 alignment: BarChartAlignment.spaceAround,
@@ -357,43 +430,61 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 barTouchData: BarTouchData(enabled: true),
                                 titlesData: FlTitlesData(
                                   show: true,
-                                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  topTitles: const AxisTitles(
+                                      sideTitles:
+                                          SideTitles(showTitles: false)),
+                                  rightTitles: const AxisTitles(
+                                      sideTitles:
+                                          SideTitles(showTitles: false)),
+                                  leftTitles: const AxisTitles(
+                                      sideTitles:
+                                          SideTitles(showTitles: false)),
                                   bottomTitles: AxisTitles(
                                     sideTitles: SideTitles(
                                       showTitles: true,
-                                      getTitlesWidget: (double value, TitleMeta meta) {
+                                      reservedSize: 45,
+                                      getTitlesWidget:
+                                          (double value, TitleMeta meta) {
                                         int index = value.toInt();
-                                        if (index >= 0 && index < categories.length) {
-                                          return Padding(
-                                            padding: const EdgeInsets.only(top: 8.0),
-                                            child: Text(
-                                              categories[index].split(' ').first,
-                                              style: TextStyle(
-                                                color: subTextColor,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
+                                        if (index >= 0 &&
+                                            index < categories.length) {
+                                          return SideTitleWidget(
+                                            meta: meta,
+                                            space: 6,
+                                            child: Transform.rotate(
+                                              angle: -0.6,
+                                              child: Text(
+                                                categories[index],
+                                                style: TextStyle(
+                                                  color: subTextColor,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           );
                                         }
-                                        return const Text('');
+                                        return const SizedBox.shrink();
                                       },
                                     ),
                                   ),
                                 ),
                                 gridData: const FlGridData(show: false),
                                 borderData: FlBorderData(show: false),
-                                barGroups: List.generate(categories.length, (index) {
-                                  double val = tempCategoryMap[categories[index]] ?? 0.0;
+                                barGroups:
+                                    List.generate(categories.length, (index) {
+                                  double val =
+                                      tempCategoryMap[categories[index]] ?? 0.0;
                                   return BarChartGroupData(
                                     x: index,
                                     barRods: [
                                       BarChartRodData(
                                         toY: val,
-                                        color: _isExpenseMode ? Colors.orangeAccent : Colors.greenAccent.shade700,
-                                        width: 18,
+                                        color: _isExpenseMode
+                                            ? Colors.orangeAccent
+                                            : Colors.greenAccent.shade700,
+                                        width: 16,
                                         borderRadius: const BorderRadius.only(
                                           topLeft: Radius.circular(6),
                                           topRight: Radius.circular(6),
@@ -413,7 +504,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
                   // Category Details
                   Text(
-                    _isExpenseMode ? 'CATEGORY SPENDING (EXPENSE)' : 'INCOME SOURCES',
+                    _isExpenseMode
+                        ? 'CATEGORY SPENDING (EXPENSE)'
+                        : 'INCOME SOURCES',
                     style: TextStyle(
                       color: subTextColor,
                       fontSize: 12,
@@ -429,8 +522,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         padding: const EdgeInsets.all(20.0),
                         child: Text(
                           _isExpenseMode
-                              ? 'No expense records found for this period! 📉'
-                              : 'No income records found for this period! 📈',
+                              ? 'No expense records found for this period!'
+                              : 'No income records found for this period!',
                           style: TextStyle(color: subTextColor),
                         ),
                       ),
@@ -441,7 +534,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         double amount = tempCategoryMap[category] ?? 0.0;
                         if (amount == 0) return const SizedBox.shrink();
 
-                        double percentage = (total > 0) ? (amount / total) * 100 : 0.0;
+                        double percentage =
+                            (total > 0) ? (amount / total) : 0.0;
 
                         return Card(
                           color: cardColor,
@@ -449,25 +543,68 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           margin: const EdgeInsets.only(bottom: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+                            side: BorderSide(
+                                color: isDark
+                                    ? Colors.white10
+                                    : const Color(0xFFE9ECEF)),
                           ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            title: Text(
-                              category,
-                              style: TextStyle(fontWeight: FontWeight.bold, color: textColor, fontSize: 15),
-                            ),
-                            subtitle: Text(
-                              '${percentage.toStringAsFixed(1)}% of total ${_isExpenseMode ? 'expense' : 'income'}',
-                              style: TextStyle(color: subTextColor, fontSize: 12),
-                            ),
-                            trailing: Text(
-                              'Rs. ${amount.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: activeThemeColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0, vertical: 12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      category,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: textColor,
+                                          fontSize: 15),
+                                    ),
+                                    Text(
+                                      'Rs. ${amount.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: activeThemeColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(4),
+                                        child: LinearProgressIndicator(
+                                          value: percentage,
+                                          backgroundColor: isDark
+                                              ? Colors.grey.shade800
+                                              : Colors.grey.shade200,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  activeThemeColor),
+                                          minHeight: 6,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      '${(percentage * 100).toStringAsFixed(1)}%',
+                                      style: TextStyle(
+                                          color: subTextColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         );

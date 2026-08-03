@@ -89,12 +89,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     }
   }
 
-  void _addNewTransaction(String title, double amount, String type) async {
+  void _addNewTransaction(String title, double amount, String type, dynamic category) async {
     String currentDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
     await _dbHelper.insertTransaction({
       'title': title,
       'amount': amount,
       'type': type,
+      'category': category.toString(),
       'date': currentDate, 
     });
     if (!mounted) return;
@@ -102,12 +103,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     _refreshTransactions(); 
   }
 
-  void _updateExistingTransaction(int id, String title, double amount, String type, String date) async {
+  void _updateExistingTransaction(int id, String title, double amount, String type, dynamic category, String date) async {
     await _dbHelper.updateTransaction({
       'id': id,
       'title': title,
       'amount': amount,
       'type': type,
+      'category': category.toString(),
       'date': date, 
     });
     if (!mounted) return;
@@ -224,7 +226,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                           ),
                         ],
                       )
-                    : SingleChildScrollView( // 🟢 Fix: Mobile layout එක ආරක්ෂිතව Scroll වීමට SingleChildScrollView එකතු කරන ලදී
+                    : SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
                         child: Column( 
                           children: [
@@ -405,7 +407,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  // 🟢 Cleaned Transaction Section (Removed duplicate Expanded calls)
   Widget _buildTransactionListSection(List<Map<String, dynamic>> filteredList, bool isDark) {
     Widget listWidget = filteredList.isEmpty
         ? const Padding(
@@ -413,8 +414,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             child: Center(child: Text('No matching transactions found! 🔍', style: TextStyle(color: Colors.grey))),
           )
         : ListView.builder(
-            shrinkWrap: true, // 🟢 SingleChildScrollView එකක් ඇතුළේ වැඩ කිරීමට
-            physics: const NeverScrollableScrollPhysics(), // 🟢 Parent scroll view එකෙන්ම scroll වීමට
+            shrinkWrap: true, 
+            physics: const NeverScrollableScrollPhysics(), 
             itemCount: filteredList.length,
             itemBuilder: (context, index) { 
               final tx = filteredList[index];
@@ -454,12 +455,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                       MaterialPageRoute(
                         builder: (context) => AddTransactionScreen(
                           initialTransaction: tx, 
-                          onAddTransaction: (title, amount, type) {
+                          onAddTransaction: (title, amount, type, category) {
                             _updateExistingTransaction(
                               tx['id'],
                               title,
                               amount,
                               type,
+                              category,
                               tx['date'],
                             );
                           },
@@ -537,7 +539,6 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         ),
         const SizedBox(height: 12.0),
 
-        // 🟢 Direct List widget insertion
         listWidget,
       ],
     );
