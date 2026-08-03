@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/database/db_helper.dart';
-import '../../../core/theme/theme_provider.dart'; // 🎨 ThemeProvider import එක
+import '../../../core/theme/theme_provider.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -19,6 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _billReminders = true;
   String _selectedCurrency = 'LKR (Rs.)';
   bool _isLoading = true;
+  File? _profileImage;
 
   @override
   void initState() {
@@ -28,31 +31,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadSettings();
   }
 
+  // 📥 Load Saved User Data
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
 
     if (!mounted) return;
 
     setState(() {
-      _nameController.text = prefs.getString('user_name') ?? 'Ann Sayuri Kotikawaththa';
-      _emailController.text = prefs.getString('user_email') ?? 'ann@example.com';
+      _nameController.text = prefs.getString('user_name') ?? 'Sayuri Kotikawaththa';
+      _emailController.text = prefs.getString('user_email') ?? 'annsayu12@gmail.com';
       _billReminders = prefs.getBool('bill_reminders') ?? true;
       _selectedCurrency = prefs.getString('currency') ?? 'LKR (Rs.)';
+      
+      final imagePath = prefs.getString('profile_image_path');
+      if (imagePath != null && imagePath.isNotEmpty) {
+        _profileImage = File(imagePath);
+      }
       _isLoading = false;
     });
   }
 
+  // 💾 Save Profile & App Settings
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_name', _nameController.text.trim());
-    await prefs.setString('user_email', _emailController.text.trim());
     await prefs.setBool('bill_reminders', _billReminders);
     await prefs.setString('currency', _selectedCurrency);
+
+    if (_profileImage != null) {
+      await prefs.setString('profile_image_path', _profileImage!.path);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Settings saved successfully! 💾'),
+          content: Text('Profile & Settings saved successfully! 💾'),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
         ),
@@ -60,11 +73,160 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // 🚪 Logout Functionality
-  // 🚪 Logout Functionality
+  // 📸 Pick Profile Image (Gallery or Camera)
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
+
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profile_image_path', pickedFile.path);
+    }
+  }
+
+  // 🖼️ Image Selection Bottom Sheet
+  void _showImagePickerBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Wrap(
+            children: [
+              const ListTile(
+                title: Text('Select Profile Picture 📸', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.purple),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 🔐 Change Password Dialog Box
+  void _showChangePasswordDialog() {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Change Password 🔐', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: currentPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Current Password',
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    validator: (val) => val == null || val.isEmpty ? 'Enter current password' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: newPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'New Password',
+                      prefixIcon: Icon(Icons.lock),
+                    ),
+                    validator: (val) {
+                      if (val == null || val.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: confirmPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm New Password',
+                      prefixIcon: Icon(Icons.check_circle_outline),
+                    ),
+                    validator: (val) {
+                      if (val != newPasswordController.text) {
+                        return 'Passwords do not match!';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF673AB7),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  // Password updating logic (e.g. SharedPreferences or Database)
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString('user_password', newPasswordController.text);
+                  
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Password updated successfully! 🎉'),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Update Password', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 🚪 Logout
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('is_logged_in'); // හෝ await prefs.setBool('is_logged_in', false);
+    await prefs.remove('is_logged_in');
 
     if (mounted) {
       Navigator.pushAndRemoveUntil(
@@ -75,6 +237,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // ⚠️ Delete Data Confirmation
   void _showResetConfirmationDialog() {
     showDialog(
       context: context,
@@ -125,7 +288,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 🎨 ThemeProvider එක සම්බන්ධ කර ගැනීම
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
 
@@ -147,7 +309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Profile Card
+                  // 👤 Editable Profile Card with Photo Avatar
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -157,19 +319,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     child: Column(
                       children: [
-                        const CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Color(0xFF673AB7),
-                          child: Text(
-                            'AS',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                        // Avatar with Camera Icon Badge
+                        GestureDetector(
+                          onTap: _showImagePickerBottomSheet,
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 45,
+                                backgroundColor: const Color(0xFF673AB7),
+                                backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+                                child: _profileImage == null
+                                    ? const Text(
+                                        'SK',
+                                        style: TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF673AB7),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 20),
+
+                        // Editable Full Name
                         TextField(
                           controller: _nameController,
                           style: TextStyle(color: textColor),
@@ -188,27 +379,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
+
+                        // Read-Only Email Address
                         TextField(
                           controller: _emailController,
-                          style: TextStyle(color: textColor),
+                          enabled: false, // Read-Only Status
+                          style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
                           decoration: InputDecoration(
-                            labelText: 'Email Address',
+                            labelText: 'Email Address (Registered)',
                             labelStyle: TextStyle(color: subTextColor),
                             prefixIcon: Icon(Icons.email_outlined, color: subTextColor),
-                            enabledBorder: OutlineInputBorder(
+                            disabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: isDark ? Colors.white38 : Colors.black26),
+                              borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.black12),
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF673AB7)),
-                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // 🔑 Change Password Action Button
+                        OutlinedButton.icon(
+                          onPressed: _showChangePasswordDialog,
+                          icon: const Icon(Icons.key, color: Color(0xFF673AB7)),
+                          label: const Text(
+                            'Change Password',
+                            style: TextStyle(color: Color(0xFF673AB7), fontWeight: FontWeight.bold),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF673AB7)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
+
                   Text(
                     'App Preferences',
                     style: TextStyle(
@@ -219,7 +425,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Settings Preferences List
+                  // Preferences Section
                   Container(
                     decoration: BoxDecoration(
                       color: cardBgColor,
@@ -228,14 +434,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     child: Column(
                       children: [
-                        // 🌙 Dark Mode Switch (ThemeProvider එක හරහා Direct Toggle වේ)
                         SwitchListTile(
                           title: Text('Dark Mode', style: TextStyle(color: textColor)),
                           subtitle: Text('Toggle between light and dark theme', style: TextStyle(color: subTextColor)),
                           value: themeProvider.isDarkMode,
                           activeThumbColor: const Color(0xFF673AB7),
                           onChanged: (val) {
-                            themeProvider.toggleTheme(val); // Instant update across the app
+                            themeProvider.toggleTheme(val);
                           },
                         ),
                         Divider(color: isDark ? Colors.white12 : Colors.black12, height: 1),
@@ -281,14 +486,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Save Button
+                  // Save Profile & Settings Button
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton.icon(
                       onPressed: _saveSettings,
                       icon: const Icon(Icons.save, color: Colors.white),
-                      label: const Text('Save Settings', style: TextStyle(fontSize: 16, color: Colors.white)),
+                      label: const Text('Save Profile & Settings', style: TextStyle(fontSize: 16, color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF673AB7),
                         shape: RoundedRectangleBorder(
@@ -319,7 +524,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   const SizedBox(height: 24),
 
-                  // ⚠️ Danger Zone / Reset Data Section
+                  // ⚠️ Reset Data Section
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
