@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../core/database/db_helper.dart';
-import '../../../core/services/export_service.dart';
+import 'package:provider/provider.dart';
+import 'package:smartspend_expensetracker/core/services/export_service.dart';
+import 'package:smartspend_expensetracker/features/expenses/model/expense_model.dart';
+import 'package:smartspend_expensetracker/features/expenses/provider/expense_provider.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -11,124 +13,52 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  final DBHelper _dbHelper = DBHelper();
-  
-  bool _isLoading = true;
   bool _isWeekly = true;
   bool _isExpenseMode = true;
 
-  Map<String, double> _categoryData = {};
-  double _totalAmount = 0.0;
-  List<Map<String, dynamic>> _rawTransactions = [];
+  // 🟢 Emoji Names mapped for all your Categories!
+  String _getCategoryName(ExpenseCategory category) {
+    switch (category) {
+      // Expenses
+      case ExpenseCategory.food:
+        return 'Food 🍕';
+      case ExpenseCategory.transport:
+        return 'Transport 🚗';
+      case ExpenseCategory.bills:
+        return 'Bills 💡';
+      case ExpenseCategory.shopping:
+        return 'Shopping 🛍️';
+      case ExpenseCategory.education:
+        return 'Education 📚';
+      case ExpenseCategory.entertainment:
+        return 'Entertainment 🎬';
+      case ExpenseCategory.healthcare:
+        return 'Healthcare 🏥';
 
-  @override
-  void initState() {
-    super.initState();
-    _loadAnalyticsData();
-  }
+      // Income
+      case ExpenseCategory.salary:
+        return 'Salary 💵';
+      case ExpenseCategory.allowance:
+        return 'Allowance 👛';
+      case ExpenseCategory.business:
+        return 'Business 💼';
+      case ExpenseCategory.gift:
+        return 'Gift 🎁';
+      case ExpenseCategory.bonus:
+        return 'Bonus 🪙';
+      case ExpenseCategory.wage:
+        return 'Wage 💰';
 
-  Future<void> _loadAnalyticsData() async {
-    setState(() => _isLoading = true);
-
-    List<Map<String, dynamic>> allTx = await _dbHelper.getAllTransactions();
-    _rawTransactions = allTx;
-    
-    Map<String, double> tempCategoryMap = _isExpenseMode
-        ? {
-            'Food': 0.0,
-            'Transport': 0.0,
-            'Medical': 0.0,
-            'Bills': 0.0,
-            'Other': 0.0,
-          }
-        : {
-            'Salary': 0.0,
-            'Business': 0.0,
-            'Investment': 0.0,
-            'Gift': 0.0,
-            'Other': 0.0,
-          };
-
-    double total = 0.0;
-    DateTime now = DateTime.now();
-    String targetType = _isExpenseMode ? 'Expense' : 'Income';
-
-    for (var tx in allTx) {
-      if (tx['type'] == targetType) {
-        DateTime txDate;
-        try {
-          List<String> parts = tx['date'].toString().split('/');
-          if (parts.length == 3) {
-            int day = int.parse(parts[0]);
-            int month = int.parse(parts[1]);
-            int year = int.parse(parts[2]);
-            txDate = DateTime(year, month, day);
-          } else {
-            txDate = DateTime.parse(tx['date']);
-          }
-        } catch (e) {
-          txDate = DateTime.now();
-        }
-
-        bool includeTx = false;
-        if (_isWeekly) {
-          Duration difference = now.difference(txDate);
-          if (difference.inDays <= 7 && difference.inDays >= 0) {
-            includeTx = true;
-          }
-        } else {
-          if (txDate.month == now.month && txDate.year == now.year) {
-            includeTx = true;
-          }
-        }
-
-        if (includeTx) {
-          double amount = (tx['amount'] as num).toDouble();
-          String title = (tx['title'] as String).toLowerCase();
-          
-          total += amount;
-
-          if (_isExpenseMode) {
-            if (title.contains('food') || title.contains('eat') || title.contains('rice') || title.contains('lunch')) {
-              tempCategoryMap['Food'] = (tempCategoryMap['Food'] ?? 0) + amount;
-            } else if (title.contains('bus') || title.contains('train') || title.contains('fuel') || title.contains('transport') || title.contains('cab')) {
-              tempCategoryMap['Transport'] = (tempCategoryMap['Transport'] ?? 0) + amount;
-            } else if (title.contains('doctor') || title.contains('medicine') || title.contains('medical') || title.contains('hospital')) {
-              tempCategoryMap['Medical'] = (tempCategoryMap['Medical'] ?? 0) + amount;
-            } else if (title.contains('bill') || title.contains('electricity') || title.contains('water') || title.contains('broadband') || title.contains('dialog')) {
-              tempCategoryMap['Bills'] = (tempCategoryMap['Bills'] ?? 0) + amount;
-            } else {
-              tempCategoryMap['Other'] = (tempCategoryMap['Other'] ?? 0) + amount;
-            }
-          } else {
-            if (title.contains('salary') || title.contains('pay') || title.contains('wage')) {
-              tempCategoryMap['Salary'] = (tempCategoryMap['Salary'] ?? 0) + amount;
-            } else if (title.contains('business') || title.contains('profit') || title.contains('sale')) {
-              tempCategoryMap['Business'] = (tempCategoryMap['Business'] ?? 0) + amount;
-            } else if (title.contains('invest') || title.contains('stock') || title.contains('crypto') || title.contains('dividend')) {
-              tempCategoryMap['Investment'] = (tempCategoryMap['Investment'] ?? 0) + amount;
-            } else if (title.contains('gift') || title.contains('bonus')) {
-              tempCategoryMap['Gift'] = (tempCategoryMap['Gift'] ?? 0) + amount;
-            } else {
-              tempCategoryMap['Other'] = (tempCategoryMap['Other'] ?? 0) + amount;
-            }
-          }
-        }
-      }
+      case ExpenseCategory.other:
+      default:
+        return 'Other 📦';
     }
-
-    setState(() {
-      _categoryData = tempCategoryMap;
-      _totalAmount = total;
-      _isLoading = false;
-    });
   }
 
-  // Export Options Modal Sheet Dialog
-  void _showExportOptions(BuildContext context) {
-    if (_rawTransactions.isEmpty) {
+  void _showExportOptions(BuildContext context, List<ExpenseModel> rawTransactions) {
+    if (rawTransactions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No transactions available to export!')),
+        const SnackBar(content: Text('No transactions available to export! ⚠️')),
       );
       return;
     }
@@ -151,21 +81,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               const SizedBox(height: 20),
               ListTile(
                 leading: const Icon(Icons.picture_as_pdf, color: Colors.redAccent, size: 30),
-                title: const Text('Export as PDF Document', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Download or print formatted PDF report'),
+                title: const Text('Export as PDF Document 📑', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Download formatted PDF report'),
                 onTap: () {
                   Navigator.pop(context);
-                  ExportService.exportToPDF(_rawTransactions);
+                  ExportService.exportToPDF(
+                    rawTransactions.map((tx) => tx.toMap()).toList(),
+                  );
                 },
               ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.table_chart, color: Colors.green, size: 30),
-                title: const Text('Export as CSV Spreadsheet', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Compatible with Microsoft Excel & Google Sheets'),
+                title: const Text('Export as CSV Spreadsheet 📊', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Compatible with Excel & Google Sheets'),
                 onTap: () async {
                   Navigator.pop(context);
-                  await ExportService.exportAndShareCSV(_rawTransactions);
+                  await ExportService.exportAndShareCSV(
+                    rawTransactions.map((tx) => tx.toMap()).toList(),
+                  );
                 },
               ),
             ],
@@ -183,7 +117,37 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.grey : Colors.grey.shade600;
 
-    final List<String> categories = _categoryData.keys.toList();
+    final provider = Provider.of<ExpenseProvider>(context);
+    final allTx = provider.transactions;
+
+    Map<String, double> tempCategoryMap = {};
+    double total = 0.0;
+    DateTime now = DateTime.now();
+    TransactionType targetType = _isExpenseMode ? TransactionType.expense : TransactionType.income;
+
+    for (var tx in allTx) {
+      if (tx.type == targetType) {
+        bool includeTx = false;
+        if (_isWeekly) {
+          Duration difference = now.difference(tx.date);
+          if (difference.inDays <= 7 && difference.inDays >= 0) {
+            includeTx = true;
+          }
+        } else {
+          if (tx.date.month == now.month && tx.date.year == now.year) {
+            includeTx = true;
+          }
+        }
+
+        if (includeTx) {
+          total += tx.amount;
+          String categoryLabel = _getCategoryName(tx.category);
+          tempCategoryMap[categoryLabel] = (tempCategoryMap[categoryLabel] ?? 0) + tx.amount;
+        }
+      }
+    }
+
+    final List<String> categories = tempCategoryMap.keys.toList();
     final Color activeThemeColor = _isExpenseMode ? Colors.redAccent : Colors.green;
 
     return Scaffold(
@@ -197,18 +161,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
             tooltip: 'Export PDF / CSV',
-            onPressed: () => _showExportOptions(context),
+            onPressed: () => _showExportOptions(context, allTx),
           ),
         ],
       ),
-      body: _isLoading
+      body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Expenses / Income Main Toggle
+                  // Expense / Income Mode Toggle
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(4),
@@ -224,15 +188,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             onTap: () {
                               if (!_isExpenseMode) {
                                 setState(() => _isExpenseMode = true);
-                                _loadAnalyticsData();
                               }
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
-                                color: _isExpenseMode ? Colors.redAccent.withValues(alpha: 0.2) : Colors.transparent,
+                                color: _isExpenseMode
+                                    ? Colors.redAccent.withValues(alpha: 0.2)
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: _isExpenseMode ? Colors.redAccent : Colors.transparent),
+                                border: Border.all(
+                                    color: _isExpenseMode ? Colors.redAccent : Colors.transparent),
                               ),
                               child: Center(
                                 child: Text(
@@ -252,15 +218,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             onTap: () {
                               if (_isExpenseMode) {
                                 setState(() => _isExpenseMode = false);
-                                _loadAnalyticsData();
                               }
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
-                                color: !_isExpenseMode ? Colors.green.withValues(alpha: 0.2) : Colors.transparent,
+                                color: !_isExpenseMode
+                                    ? Colors.green.withValues(alpha: 0.2)
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: !_isExpenseMode ? Colors.green : Colors.transparent),
+                                border: Border.all(
+                                    color: !_isExpenseMode ? Colors.green : Colors.transparent),
                               ),
                               child: Center(
                                 child: Text(
@@ -279,14 +247,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Header Toggle (Weekly / Monthly)
+                  // Time Period Header & Toggle
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         _isWeekly
-                            ? (_isExpenseMode ? 'LAST 7 DAYS EXPENSES' : 'LAST 7 DAYS INCOME')
-                            : (_isExpenseMode ? 'THIS MONTH EXPENSES' : 'THIS MONTH INCOME'),
+                            ? (_isExpenseMode ? 'LAST 7 DAYS EXPENSES 🗓️' : 'LAST 7 DAYS INCOME 🗓️')
+                            : (_isExpenseMode ? 'THIS MONTH EXPENSES 📅' : 'THIS MONTH INCOME 📅'),
                         style: TextStyle(
                           color: subTextColor,
                           fontSize: 12,
@@ -306,7 +274,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               onTap: () {
                                 if (!_isWeekly) {
                                   setState(() => _isWeekly = true);
-                                  _loadAnalyticsData();
                                 }
                               },
                               child: Container(
@@ -329,7 +296,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               onTap: () {
                                 if (_isWeekly) {
                                   setState(() => _isWeekly = false);
-                                  _loadAnalyticsData();
                                 }
                               },
                               child: Container(
@@ -355,7 +321,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Bar Chart Card
+                  // Bar Chart Card Overview
                   Card(
                     color: cardColor,
                     elevation: 0,
@@ -372,11 +338,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                _isExpenseMode ? 'Expense Overview' : 'Income Overview',
+                                _isExpenseMode ? 'Expense Overview 📈' : 'Income Overview 📉',
                                 style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.bold),
                               ),
                               Text(
-                                'Total: Rs. ${_totalAmount.toStringAsFixed(2)}',
+                                'Total: Rs. ${total.toStringAsFixed(2)}',
                                 style: TextStyle(color: activeThemeColor, fontSize: 13, fontWeight: FontWeight.bold),
                               ),
                             ],
@@ -387,7 +353,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             child: BarChart(
                               BarChartData(
                                 alignment: BarChartAlignment.spaceAround,
-                                maxY: (_totalAmount > 0 ? _totalAmount * 1.2 : 1000),
+                                maxY: (total > 0 ? total * 1.2 : 1000),
                                 barTouchData: BarTouchData(enabled: true),
                                 titlesData: FlTitlesData(
                                   show: true,
@@ -403,7 +369,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                           return Padding(
                                             padding: const EdgeInsets.only(top: 8.0),
                                             child: Text(
-                                              categories[index],
+                                              categories[index].split(' ').first,
                                               style: TextStyle(
                                                 color: subTextColor,
                                                 fontSize: 10,
@@ -420,7 +386,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 gridData: const FlGridData(show: false),
                                 borderData: FlBorderData(show: false),
                                 barGroups: List.generate(categories.length, (index) {
-                                  double val = _categoryData[categories[index]] ?? 0.0;
+                                  double val = tempCategoryMap[categories[index]] ?? 0.0;
                                   return BarChartGroupData(
                                     x: index,
                                     barRods: [
@@ -445,7 +411,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Category Breakdown List Title
+                  // Category Details
                   Text(
                     _isExpenseMode ? 'CATEGORY SPENDING (EXPENSE)' : 'INCOME SOURCES',
                     style: TextStyle(
@@ -457,8 +423,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Category Cards
-                  if (_totalAmount == 0)
+                  if (total == 0)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.all(20.0),
@@ -473,10 +438,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   else
                     Column(
                       children: categories.map((category) {
-                        double amount = _categoryData[category] ?? 0.0;
+                        double amount = tempCategoryMap[category] ?? 0.0;
                         if (amount == 0) return const SizedBox.shrink();
 
-                        double percentage = (_totalAmount > 0) ? (amount / _totalAmount) * 100 : 0.0;
+                        double percentage = (total > 0) ? (amount / total) * 100 : 0.0;
 
                         return Card(
                           color: cardColor,
