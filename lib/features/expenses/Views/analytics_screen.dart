@@ -17,41 +17,107 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   bool _isExpenseMode = true;
   int _touchedIndex = -1;
 
-  // Category Names without Emojis
-  String _getCategoryName(ExpenseCategory category) {
-    switch (category) {
+  // Category Name Resolver (Fix for Enum / String / SQLite mismatch)
+  String _getCategoryName(dynamic category) {
+    if (category == null) return 'Other';
+
+    // String එකක් හෝ Enum එකක් ආවත් clean string එකක් බවට හරවගැනීම
+    String catStr = category
+        .toString()
+        .replaceAll('ExpenseCategory.', '')
+        .trim()
+        .toLowerCase();
+
+    switch (catStr) {
       // Expenses
-      case ExpenseCategory.food:
+      case 'food':
+      case 'eat':
+      case 'kottu':
+      case 'hotel':
+      case 'restaurant':
         return 'Food';
-      case ExpenseCategory.transport:
+
+      case 'transport':
+      case 'bus':
+      case 'train':
+      case 'car':
+      case 'pickme':
+      case 'uber':
+      case 'fuel':
         return 'Transport';
-      case ExpenseCategory.bills:
+
+      case 'bills':
+      case 'bill':
+      case 'current':
+      case 'water':
+      case 'recharge':
+      case 'utility':
         return 'Bills';
-      case ExpenseCategory.shopping:
+
+      case 'shopping':
+      case 'clothes':
+      case 'daraz':
         return 'Shopping';
-      case ExpenseCategory.education:
+
+      case 'education':
+      case 'school':
+      case 'campus':
+      case 'course':
+      case 'books':
         return 'Education';
-      case ExpenseCategory.healthcare:
+
+      case 'healthcare':
+      case 'medical':
+      case 'medicine':
+      case 'doctor':
+      case 'hospital':
+      case 'clinic':
         return 'Medical';
-      case ExpenseCategory.entertainment:
+
+      case 'entertainment':
+      case 'movie':
+      case 'game':
+      case 'leisure':
         return 'Entertainment';
 
       // Income
-      case ExpenseCategory.salary:
+      case 'salary':
+      case 'padi':
+      case 'job':
         return 'Salary';
-      case ExpenseCategory.allowance:
+
+      case 'allowance':
+      case 'pocketmoney':
         return 'Allowance';
-      case ExpenseCategory.business:
+
+      case 'business':
+      case 'profit':
+      case 'trade':
         return 'Business';
-      case ExpenseCategory.gift:
+
+      case 'gift':
+      case 'present':
         return 'Gift';
-      case ExpenseCategory.bonus:
+
+      case 'bonus':
         return 'Bonus';
-      case ExpenseCategory.wage:
+
+      case 'wage':
         return 'Wage';
 
-      case ExpenseCategory.other:
       default:
+        // Text එකක් ඇතුළේ මෙම වචන තිබේදැයි පරීක්ෂා කිරීම (Partial match fallback)
+        if (catStr.contains('food') || catStr.contains('eat')) return 'Food';
+        if (catStr.contains('trans') || catStr.contains('bus') || catStr.contains('train')) return 'Transport';
+        if (catStr.contains('bill') || catStr.contains('water') || catStr.contains('elect')) return 'Bills';
+        if (catStr.contains('shop')) return 'Shopping';
+        if (catStr.contains('edu') || catStr.contains('school')) return 'Education';
+        if (catStr.contains('medic') || catStr.contains('health') || catStr.contains('doctor')) return 'Medical';
+        if (catStr.contains('sal') || catStr.contains('padi')) return 'Salary';
+        if (catStr.contains('allow')) return 'Allowance';
+        if (catStr.contains('busin')) return 'Business';
+        if (catStr.contains('gift')) return 'Gift';
+
         return 'Other';
     }
   }
