@@ -25,13 +25,33 @@ class DBHelper {
     String path = join(await getDatabasesPath(), 'smartspend.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 5, // 🟢 Version 5 ට Update කරන ලදී
       onCreate: (db, version) async {
         await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await _createUsersTable(db);
+        }
+        if (oldVersion < 3) {
+          await _createBillsTable(db);
+        }
+        if (oldVersion < 4) {
+          try {
+            await db.execute('ALTER TABLE transactions ADD COLUMN user_id INTEGER;');
+          } catch (_) {}
+          try {
+            await db.execute('ALTER TABLE transactions ADD COLUMN category TEXT;');
+          } catch (_) {}
+        }
+        // 🟢 Version 5 Upgrade - Category column එකට DEFAULT value එකක් දීම
+        if (oldVersion < 5) {
+          try {
+            // category column එකට DEFAULT 'Other' value එක දෙමු
+            await db.execute('ALTER TABLE transactions ADD COLUMN category TEXT DEFAULT "Other";');
+          } catch (_) {
+            // column එක දැනටමත් තියෙනවා නම්, මෙය ignore වෙයි
+          }
         }
       },
     );
@@ -45,11 +65,12 @@ class DBHelper {
         user_id INTEGER,
         title TEXT NOT NULL,
         amount REAL NOT NULL,
-        category TEXT NOT NULL,
+        category TEXT DEFAULT 'Other',
         date TEXT NOT NULL,
         type TEXT NOT NULL
       )
     ''');
+    await _createBillsTable(db);
   }
 
   static Future<void> _createUsersTable(Database db) async {
@@ -60,6 +81,19 @@ class DBHelper {
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT NOT NULL
+      )
+    ''');
+  }
+
+  static Future<void> _createBillsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS bills (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        title TEXT NOT NULL,
+        amount REAL NOT NULL,
+        due_date TEXT NOT NULL,
+        is_paid INTEGER NOT NULL DEFAULT 0
       )
     ''');
   }
@@ -121,21 +155,18 @@ class DBHelper {
     return null;
   }
 
-  // 🔄 Password Reset Method
   Future<bool> resetPassword(String email, String newPassword) async {
     try {
       final db = await database;
 
-      // Email එක DB එකේ තියෙනවාද බලමු
       final List<Map<String, dynamic>> maps = await db.query(
         'users',
         where: 'LOWER(email) = ?',
         whereArgs: [email.toLowerCase().trim()],
       );
 
-      if (maps.isEmpty) return false; // Email එක නැත්නම් false
+      if (maps.isEmpty) return false;
 
-      // New Password එක Hash කරලා Update කිරීම 🔒
       String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
 
       int count = await db.update(
@@ -153,7 +184,7 @@ class DBHelper {
 
   Future<void> logoutUser() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Session එක සම්පූර්ණයෙන්ම clear කරයි
+    await prefs.clear();
   }
 
   Future<Map<String, dynamic>?> getCurrentUserSession() async {
@@ -168,10 +199,8 @@ class DBHelper {
     };
   }
 
-  // ---------------------------------------------------------------------------
   // 💸 EXPENSE / TRANSACTION METHODS
-  // ---------------------------------------------------------------------------
-
+  
   Future<int> deleteAllTransactions() async {
     final db = await database;
     return await db.delete('transactions');
@@ -179,14 +208,31 @@ class DBHelper {
 
   Future<int> insertTransaction(Map<String, dynamic> transaction) async {
     final db = await database;
-    return await db.insert('transactions', transaction);
+    final userSession = await getCurrentUserSession();
+    final userId = userSession != null ? userSession['id'] : null;
+
+    Map<String, dynamic> data = Map.from(transaction);
+    if (!data.containsKey('user_id') || data['user_id'] == null) {
+      data['user_id'] = userId;
+    }
+    // Category එකක් නැතිනම් 'Other' දමමු
+    if (!data.containsKey('category') || data['category'] == null || data['category'].toString().isEmpty) {
+      data['category'] = 'Other';
+    }
+
+    return await db.insert('transactions', data);
   }
 
   Future<int> updateTransaction(Map<String, dynamic> transaction) async {
     final db = await database;
+    Map<String, dynamic> data = Map.from(transaction);
+    // Category එකක් නැතිනම් 'Other' දමමු
+    if (!data.containsKey('category') || data['category'] == null || data['category'].toString().isEmpty) {
+      data['category'] = 'Other';
+    }
     return await db.update(
       'transactions',
-      transaction,
+      data,
       where: 'id = ?',
       whereArgs: [transaction['id']],
     );
@@ -194,7 +240,18 @@ class DBHelper {
 
   Future<List<Map<String, dynamic>>> getAllTransactions() async {
     final db = await database;
-    return await db.query('transactions', orderBy: 'date DESC');
+    final userSession = await getCurrentUserSession();
+    final userId = userSession != null ? userSession['id'] : null;
+
+    if (userId != null) {
+      return await db.query(
+        'transactions',
+        where: 'user_id = ? OR user_id IS NULL',
+        whereArgs: [userId],
+        orderBy: 'date DESC, id DESC',
+      );
+    }
+    return await db.query('transactions', orderBy: 'date DESC, id DESC');
   }
 
   Future<int> deleteTransaction(int id) async {
@@ -202,10 +259,7 @@ class DBHelper {
     return await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ---------------------------------------------------------------------------
   // 🎯 BUDGET METHODS
-  // ---------------------------------------------------------------------------
-
   Future<double> getBudget() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble('budget_limit') ?? 0.0;
@@ -214,5 +268,67 @@ class DBHelper {
   Future<void> setBudget(double amount) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('budget_limit', amount);
+  }
+
+  // ---------------------------------------------------------------------------
+  // 🔔 BILL REMINDER METHODS
+  // ---------------------------------------------------------------------------
+
+  Future<int> insertBill(String title, double amount, String dueDate) async {
+    final db = await database;
+    final userSession = await getCurrentUserSession();
+    final userId = userSession != null ? userSession['id'] : null;
+
+    return await db.insert('bills', {
+      'user_id': userId,
+      'title': title,
+      'amount': amount,
+      'due_date': dueDate,
+      'is_paid': 0,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getUserBills() async {
+    final db = await database;
+    final userSession = await getCurrentUserSession();
+    final userId = userSession != null ? userSession['id'] : null;
+
+    if (userId != null) {
+      return await db.query(
+        'bills',
+        where: 'user_id = ? OR user_id IS NULL',
+        whereArgs: [userId],
+        orderBy: 'id DESC',
+      );
+    }
+    return await db.query('bills', orderBy: 'id DESC');
+  }
+
+  // 🟢 Updated - Bill Paid කරන විට Category එකත් එක්ක Transaction Add කිරීම
+  Future<void> markBillAsPaid(int billId, String title, double amount, String dueDate) async {
+    final db = await database;
+    final userSession = await getCurrentUserSession();
+    final userId = userSession != null ? userSession['id'] : null;
+
+    await db.update(
+      'bills',
+      {'is_paid': 1},
+      where: 'id = ?',
+      whereArgs: [billId],
+    );
+
+    await db.insert('transactions', {
+      'user_id': userId,
+      'title': 'Paid: $title',
+      'amount': amount,
+      'category': 'Bills & Utilities',  // 👈 Category එකතු කරන ලදී
+      'date': DateTime.now().toIso8601String().split('T')[0],
+      'type': 'Expense',
+    });
+  }
+
+  Future<int> deleteBill(int id) async {
+    final db = await database;
+    return await db.delete('bills', where: 'id = ?', whereArgs: [id]);
   }
 }
