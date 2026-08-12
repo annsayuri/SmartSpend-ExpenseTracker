@@ -296,14 +296,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () async {
                 Navigator.pop(dialogContext);
 
-                // 1. Delete Database Tables (Transactions, Bills, etc.)
-                await DBHelper().deleteAllTransactions();
-                // DBHelper එකේ delete clear methods තියේ නම් direct call කළ හැක:
-                // await DBHelper().clearAllData(); 
+                // 1. Delete Database Tables (Transactions & Bills)
+                await DBHelper().deleteAllData();
 
-                // 2. Clear SharedPreferences Data (Budget Limits, User Profile & Preferences)
+                // 2. Clear SharedPreferences without breaking login session
                 final prefs = await SharedPreferences.getInstance();
-                await prefs.clear();
+                await prefs.remove('budget_limit');
+                await prefs.remove('profile_image_path');
+                await prefs.remove('bill_reminders');
+                await prefs.remove('currency');
 
                 // 3. Reload Page State back to Defaults
                 await _loadSettings();
