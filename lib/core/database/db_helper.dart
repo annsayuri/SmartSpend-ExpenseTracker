@@ -25,7 +25,7 @@ class DBHelper {
     String path = join(await getDatabasesPath(), 'smartspend.db');
     return await openDatabase(
       path,
-      version: 5, // 🟢 Version 5 ට Update කරන ලදී
+      version: 5,
       onCreate: (db, version) async {
         await _createTables(db);
       },
@@ -44,14 +44,10 @@ class DBHelper {
             await db.execute('ALTER TABLE transactions ADD COLUMN category TEXT;');
           } catch (_) {}
         }
-        // 🟢 Version 5 Upgrade - Category column එකට DEFAULT value එකක් දීම
         if (oldVersion < 5) {
           try {
-            // category column එකට DEFAULT 'Other' value එක දෙමු
             await db.execute('ALTER TABLE transactions ADD COLUMN category TEXT DEFAULT "Other";');
-          } catch (_) {
-            // column එක දැනටමත් තියෙනවා නම්, මෙය ignore වෙයි
-          }
+          } catch (_) {}
         }
       },
     );
@@ -199,8 +195,10 @@ class DBHelper {
     };
   }
 
+  // ---------------------------------------------------------------------------
   // 💸 EXPENSE / TRANSACTION METHODS
-  
+  // ---------------------------------------------------------------------------
+
   Future<int> deleteAllTransactions() async {
     final db = await database;
     return await db.delete('transactions');
@@ -215,7 +213,6 @@ class DBHelper {
     if (!data.containsKey('user_id') || data['user_id'] == null) {
       data['user_id'] = userId;
     }
-    // Category එකක් නැතිනම් 'Other' දමමු
     if (!data.containsKey('category') || data['category'] == null || data['category'].toString().isEmpty) {
       data['category'] = 'Other';
     }
@@ -226,7 +223,6 @@ class DBHelper {
   Future<int> updateTransaction(Map<String, dynamic> transaction) async {
     final db = await database;
     Map<String, dynamic> data = Map.from(transaction);
-    // Category එකක් නැතිනම් 'Other' දමමු
     if (!data.containsKey('category') || data['category'] == null || data['category'].toString().isEmpty) {
       data['category'] = 'Other';
     }
@@ -259,7 +255,10 @@ class DBHelper {
     return await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
   }
 
+  // ---------------------------------------------------------------------------
   // 🎯 BUDGET METHODS
+  // ---------------------------------------------------------------------------
+  
   Future<double> getBudget() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble('budget_limit') ?? 0.0;
@@ -304,7 +303,6 @@ class DBHelper {
     return await db.query('bills', orderBy: 'id DESC');
   }
 
-  // 🟢 Updated - Bill Paid කරන විට Category එකත් එක්ක Transaction Add කිරීම
   Future<void> markBillAsPaid(int billId, String title, double amount, String dueDate) async {
     final db = await database;
     final userSession = await getCurrentUserSession();
@@ -321,7 +319,7 @@ class DBHelper {
       'user_id': userId,
       'title': 'Paid: $title',
       'amount': amount,
-      'category': 'Bills & Utilities',  // 👈 Category එකතු කරන ලදී
+      'category': 'Bills & Utilities',
       'date': DateTime.now().toIso8601String().split('T')[0],
       'type': 'Expense',
     });
@@ -330,5 +328,21 @@ class DBHelper {
   Future<int> deleteBill(int id) async {
     final db = await database;
     return await db.delete('bills', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> deleteAllBills() async {
+    final db = await database;
+    return await db.delete('bills');
+  }
+
+  // ---------------------------------------------------------------------------
+  // 🧹 COMPLETE APP RESET METHOD
+  // ---------------------------------------------------------------------------
+
+  /// Clean all app data from Database (Transactions & Bills)
+  Future<void> deleteAllData() async {
+    final db = await database;
+    await db.delete('transactions');
+    await db.delete('bills');
   }
 }
