@@ -8,7 +8,7 @@ class BillReminderScreen extends StatefulWidget {
   State<BillReminderScreen> createState() => _BillReminderScreenState();
 }
 
-class _BillReminderScreenState extends State<BillReminderScreen> {
+class _BillReminderScreenState extends State<BillReminderScreen> with WidgetsBindingObserver {
   final DBHelper _dbHelper = DBHelper();
   List<Map<String, dynamic>> _bills = [];
   bool _isLoading = true;
@@ -16,13 +16,30 @@ class _BillReminderScreenState extends State<BillReminderScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadBills();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // App Lifecycle වෙනස් වෙන විට (උදා: Navigation Back ආ විට) Data Auto-Refresh වීම 🔄
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadBills();
+    }
   }
 
   // 1. Database එකෙන් Bills Fetch කිරීම 📥
   Future<void> _loadBills() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     final data = await _dbHelper.getUserBills();
+    if (!mounted) return;
     setState(() {
       _bills = data;
       _isLoading = false;
@@ -53,7 +70,7 @@ class _BillReminderScreenState extends State<BillReminderScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Failed to process payment. Please try again.'),
             backgroundColor: Colors.red,
           ),
@@ -183,6 +200,13 @@ class _BillReminderScreenState extends State<BillReminderScreen> {
         backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadBills,
+            tooltip: 'Refresh Bills',
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddBillDialog,
