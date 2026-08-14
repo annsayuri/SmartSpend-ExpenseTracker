@@ -46,6 +46,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final imagePath = prefs.getString('profile_image_path');
       if (imagePath != null && imagePath.isNotEmpty) {
         _profileImage = File(imagePath);
+      } else {
+        _profileImage = null;
       }
       _isLoading = false;
     });
@@ -141,7 +143,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               
-              // 🗑️ Photo එකක් තියෙනවා නම් විතරක් Remove Option එක පෙන්වයි:
               if (_profileImage != null) ...[
                 const Divider(),
                 ListTile(
@@ -271,16 +272,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // ⚠️ Delete Data Confirmation
+  // ⚠️ Delete All App Data & Reset Function
   void _showResetConfirmationDialog() {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Reset All Data? ⚠️'),
+          title: const Text('Reset All App Data? ⚠️', style: TextStyle(fontWeight: FontWeight.bold)),
           content: const Text(
-            'This will permanently delete all your Transaction data. Are you sure?',
+            'This will permanently delete all your Transactions, Bills, Budget Limits, and Profile Settings. Are you sure you want to completely reset the app?',
           ),
           actions: [
             TextButton(
@@ -294,18 +295,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               onPressed: () async {
                 Navigator.pop(dialogContext);
-                await DBHelper().deleteAllTransactions();
+
+                // 1. Delete Database Tables (Transactions & Bills)
+                await DBHelper().deleteAllData();
+
+                // 2. Clear SharedPreferences without breaking login session
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('budget_limit');
+                await prefs.remove('profile_image_path');
+                await prefs.remove('bill_reminders');
+                await prefs.remove('currency');
+
+                // 3. Reload Page State back to Defaults
+                await _loadSettings();
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('All data has been successfully deleted! 🧹'),
+                      content: Text('App data, Bills & Budget Limits reset successfully! 🧹✨'),
                       backgroundColor: Colors.redAccent,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
                 }
               },
-              child: const Text('Yes, Delete All', style: TextStyle(color: Colors.white)),
+              child: const Text('Yes, Reset Everything', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -343,7 +357,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 👤 Editable Profile Card with Photo Avatar
+                  // 👤 Profile Card
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -353,7 +367,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     child: Column(
                       children: [
-                        // Avatar with Camera Icon Badge
                         GestureDetector(
                           onTap: _showImagePickerBottomSheet,
                           child: Stack(
@@ -414,7 +427,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Read-Only Email Address
+                        // Read-Only Email
                         TextField(
                           controller: _emailController,
                           enabled: false,
@@ -575,7 +588,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Resetting will erase all recorded transactions permanently.',
+                          'Resetting will erase all transactions, bills, budget limits, and settings permanently.',
                           style: TextStyle(color: subTextColor, fontSize: 13),
                         ),
                         const SizedBox(height: 12),

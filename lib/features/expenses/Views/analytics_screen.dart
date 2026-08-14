@@ -237,6 +237,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.grey : Colors.grey.shade600;
 
+    // ✅ Provider එකෙන් transactions ලබා ගැනීම
     final provider = Provider.of<ExpenseProvider>(context);
     final allTx = provider.transactions;
 

@@ -145,7 +145,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
               // Transaction Type Dropdown
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: InputDecoration(
                   labelText: 'Transaction Type',
                   prefixIcon: const Icon(Icons.swap_horiz_outlined),
@@ -172,7 +172,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
               // Category Dropdown
               DropdownButtonFormField<ExpenseCategory>(
-                value: _availableCategories.contains(_selectedCategory)
+                initialValue: _availableCategories.contains(_selectedCategory)
                     ? _selectedCategory
                     : _availableCategories.first,
                 decoration: InputDecoration(

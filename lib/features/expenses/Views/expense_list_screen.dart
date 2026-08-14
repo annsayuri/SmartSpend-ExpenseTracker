@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart'; 
 import 'package:fl_chart/fl_chart.dart';
-import 'analytics_screen.dart';
+import 'analytics_screen.dart'; 
 import 'package:smartspend_expensetracker/core/database/db_helper.dart';
 import 'add_transaction_screen.dart';
-import 'settings_screen.dart';
-import 'budget_screen.dart';
+import 'settings_screen.dart'; 
+import 'budget_screen.dart'; 
 import 'bill_reminder_screen.dart';
 import 'transaction_history_screen.dart';
-import '../model/expense_model.dart';
 
 class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
@@ -18,17 +17,17 @@ class ExpenseListScreen extends StatefulWidget {
 }
 
 class _ExpenseListScreenState extends State<ExpenseListScreen> {
-  final DBHelper _dbHelper = DBHelper();
-  List<Map<String, dynamic>> _transactions = [];
-  bool _isLoading = true;
+  final DBHelper _dbHelper = DBHelper(); 
+  List<Map<String, dynamic>> _transactions = []; 
+  bool _isLoading = true; 
 
   String _searchQuery = '';
-  String _selectedFilter = 'All';
+  String _selectedFilter = 'All'; 
 
   @override
   void initState() {
     super.initState();
-    _refreshTransactions();
+    _refreshTransactions(); 
   }
 
   Future<void> _refreshTransactions() async {
@@ -36,14 +35,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     if (!mounted) return;
     setState(() {
       _transactions = data;
-      _isLoading = false;
+      _isLoading = false; 
     });
   }
 
   double get _totalBalance {
     double balance = 0.0;
     for (var tx in _transactions) {
-      final double amount = (tx['amount'] as num).toDouble();
+      final double amount = (tx['amount'] as num).toDouble(); 
       if (tx['type'] == 'Income') {
         balance += amount;
       } else {
@@ -65,101 +64,113 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         .fold(0.0, (sum, tx) => sum + (tx['amount'] as num).toDouble());
   }
 
+  // 🟢 Category Detect Method - එකතු කරන ලදී
+  String _detectCategory(String title, String type) {
+    String lowerTitle = title.toLowerCase();
+    
+    if (type == 'Income') {
+      if (lowerTitle.contains('salary') || lowerTitle.contains('padi') || lowerTitle.contains('pay') || lowerTitle.contains('wage')) {
+        return 'Salary';
+      } else if (lowerTitle.contains('business') || lowerTitle.contains('profit') || lowerTitle.contains('sale') || lowerTitle.contains('income')) {
+        return 'Business';
+      } else if (lowerTitle.contains('invest') || lowerTitle.contains('stock') || lowerTitle.contains('crypto') || lowerTitle.contains('dividend')) {
+        return 'Investment';
+      } else if (lowerTitle.contains('gift') || lowerTitle.contains('bonus') || lowerTitle.contains('present')) {
+        return 'Gift';
+      } else {
+        return 'Other';
+      }
+    } else {
+      if (lowerTitle.contains('food') || lowerTitle.contains('eat') || lowerTitle.contains('rice') || lowerTitle.contains('lunch') || lowerTitle.contains('dinner') || lowerTitle.contains('kottu') || lowerTitle.contains('hotel')) {
+        return 'Food';
+      } else if (lowerTitle.contains('bus') || lowerTitle.contains('train') || lowerTitle.contains('fuel') || lowerTitle.contains('transport') || lowerTitle.contains('cab') || lowerTitle.contains('car') || lowerTitle.contains('service') || lowerTitle.contains('insurance')) {
+        return 'Transport';
+      } else if (lowerTitle.contains('doctor') || lowerTitle.contains('medicine') || lowerTitle.contains('medical') || lowerTitle.contains('hospital') || lowerTitle.contains('clinic') || lowerTitle.contains('care')) {
+        return 'Medical';
+      } else if (lowerTitle.contains('bill') || lowerTitle.contains('electricity') || lowerTitle.contains('water') || lowerTitle.contains('broadband') || lowerTitle.contains('dialog') || lowerTitle.contains('current') || lowerTitle.contains('recharge')) {
+        return 'Bills';
+      } else {
+        return 'Other';
+      }
+    }
+  }
+
   Map<String, dynamic> _getCategoryStyle(String title, String type) {
     String lowerTitle = title.toLowerCase();
-
+    
     if (type == 'Income') {
       if (lowerTitle.contains('salary') || lowerTitle.contains('padi')) {
         return {'icon': Icons.payments_rounded, 'color': Colors.green.shade600};
       }
       return {'icon': Icons.add_card_rounded, 'color': Colors.teal.shade600};
     } else {
-      if (lowerTitle.contains('medicine') || lowerTitle.contains('care') ||
-          lowerTitle.contains('doctor') || lowerTitle.contains('hospital') ||
-          lowerTitle.contains('clinic')) {
-        return {
-          'icon': Icons.medical_services_rounded,
-          'color': Colors.teal.shade700
-        };
+      if (lowerTitle.contains('medicine') || lowerTitle.contains('care') || lowerTitle.contains('doctor') || lowerTitle.contains('hospital') || lowerTitle.contains('clinic')) {
+        return {'icon': Icons.medical_services_rounded, 'color': Colors.teal.shade700};
       }
-      if (lowerTitle.contains('bus') || lowerTitle.contains('train') ||
-          lowerTitle.contains('car') || lowerTitle.contains('service') ||
-          lowerTitle.contains('insurance')) {
-        return {
-          'icon': Icons.directions_bus_rounded,
-          'color': Colors.orange.shade700
-        };
+      if (lowerTitle.contains('bus') || lowerTitle.contains('train') || lowerTitle.contains('car') || lowerTitle.contains('service') || lowerTitle.contains('insurance')) {
+        return {'icon': Icons.directions_bus_rounded, 'color': Colors.orange.shade700};
       }
-      if (lowerTitle.contains('food') || lowerTitle.contains('eat') ||
-          lowerTitle.contains('kottu') || lowerTitle.contains('hotel')) {
+      if (lowerTitle.contains('food') || lowerTitle.contains('eat') || lowerTitle.contains('kottu') || lowerTitle.contains('hotel')) {
         return {'icon': Icons.fastfood_rounded, 'color': Colors.red.shade400};
       }
-      if (lowerTitle.contains('bill') || lowerTitle.contains('current') ||
-          lowerTitle.contains('water') || lowerTitle.contains('recharge')) {
-        return {
-          'icon': Icons.receipt_long_rounded,
-          'color': Colors.blue.shade600
-        };
+      if (lowerTitle.contains('bill') || lowerTitle.contains('current') || lowerTitle.contains('water') || lowerTitle.contains('recharge')) {
+        return {'icon': Icons.receipt_long_rounded, 'color': Colors.blue.shade600};
       }
       return {'icon': Icons.shopping_bag_rounded, 'color': Colors.amber.shade800};
     }
   }
 
-  // ✅ මෙය ExpenseModel object එකක් ලබා ගනී
-  void _addNewTransaction(ExpenseModel expense) async {
+  // 🟢 Updated - Category එකත් එක්ක Transaction Add කිරීම
+  void _addNewTransaction(String title, double amount, String type) async {
     String currentDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    String category = _detectCategory(title, type);
+    
     await _dbHelper.insertTransaction({
-      'title': expense.title,
-      'amount': expense.amount,
-      'type': expense.type == TransactionType.income ? 'Income' : 'Expense',
-      'category': expense.category.name,
+      'title': title,
+      'amount': amount,
+      'type': type,
       'date': currentDate,
+      'category': category,  // 👈 Category එකතු කරන ලදී
     });
     if (!mounted) return;
     setState(() => _isLoading = true);
-    _refreshTransactions();
+    _refreshTransactions(); 
   }
 
-  // ✅ මෙය ExpenseModel object එකක් ලබා ගනී
-  void _updateExistingTransaction(int id, ExpenseModel expense) async {
+  // 🟢 Updated - Category එකත් එක්ක Transaction Update කිරීම
+  void _updateExistingTransaction(int id, String title, double amount, String type, String date) async {
+    String category = _detectCategory(title, type);
+    
     await _dbHelper.updateTransaction({
       'id': id,
-      'title': expense.title,
-      'amount': expense.amount,
-      'type': expense.type == TransactionType.income ? 'Income' : 'Expense',
-      'category': expense.category.name,
-      'date': DateFormat('dd/MM/yyyy').format(expense.date),
+      'title': title,
+      'amount': amount,
+      'type': type,
+      'date': date,
+      'category': category,  // 👈 Category එකතු කරන ලදී
     });
     if (!mounted) return;
     setState(() => _isLoading = true);
-    _refreshTransactions();
+    _refreshTransactions(); 
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWeb = screenWidth > 800;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark; 
 
     final filteredTransactions = _transactions.where((tx) {
-      final matchesSearch = tx['title']
-          .toString()
-          .toLowerCase()
-          .contains(_searchQuery.toLowerCase());
-      final matchesFilter =
-          _selectedFilter == 'All' || tx['type'] == _selectedFilter;
+      final matchesSearch = tx['title'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesFilter = _selectedFilter == 'All' || tx['type'] == _selectedFilter;
       return matchesSearch && matchesFilter;
     }).toList();
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA), 
       appBar: AppBar(
-        title: const Text('SmartSpend 💰',
-            style:
-                TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.8)),
-        backgroundColor:
-            isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
+        title: const Text('SmartSpend 💰', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+        backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -169,10 +180,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             onPressed: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const BudgetGoalsScreen()),
+                MaterialPageRoute(builder: (context) => const BudgetGoalsScreen()),
               );
-              _refreshTransactions();
+              _refreshTransactions(); 
             },
           ),
           IconButton(
@@ -181,10 +191,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             onPressed: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const BillReminderScreen()),
+                MaterialPageRoute(builder: (context) => const BillReminderScreen()),
               );
-              _refreshTransactions();
+              _refreshTransactions(); 
             },
           ),
           IconButton(
@@ -193,10 +202,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             onPressed: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const TransactionHistoryScreen()),
+                MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()),
               );
-              _refreshTransactions();
+              _refreshTransactions(); 
             },
           ),
           IconButton(
@@ -205,10 +213,9 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             onPressed: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const AnalyticsScreen()),
+                MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
               );
-              _refreshTransactions();
+              _refreshTransactions(); 
             },
           ),
           IconButton(
@@ -219,20 +226,20 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 context,
                 MaterialPageRoute(builder: (context) => const SettingsScreen()),
               );
-              _refreshTransactions();
+              _refreshTransactions(); 
             },
           ),
           const SizedBox(width: 8.0),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator()) 
           : Center(
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 1200),
+                constraints: const BoxConstraints(maxWidth: 1200), 
                 padding: const EdgeInsets.all(16.0),
-                child: isWeb
-                    ? Row(
+                child: isWeb 
+                    ? Row( 
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
@@ -251,30 +258,27 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                           Expanded(
                             flex: 6,
                             child: SingleChildScrollView(
-                              child: _buildTransactionListSection(
-                                  filteredTransactions, isDark),
+                              child: _buildTransactionListSection(filteredTransactions, isDark),
                             ),
                           ),
                         ],
                       )
                     : SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        child: Column(
+                        child: Column( 
                           children: [
                             _buildBalanceCard(isDark),
                             const SizedBox(height: 16.0),
                             _buildPieChartCard(isDark),
                             const SizedBox(height: 20.0),
-                            _buildTransactionListSection(
-                                filteredTransactions, isDark),
+                            _buildTransactionListSection(filteredTransactions, isDark),
                           ],
                         ),
                       ),
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor:
-            isDark ? Colors.deepPurple.shade400 : Colors.deepPurple.shade700,
+        backgroundColor: isDark ? Colors.deepPurple.shade400 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 4,
         onPressed: () async {
@@ -282,17 +286,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
             context,
             MaterialPageRoute(
               builder: (context) => AddTransactionScreen(
-                onAddTransaction: (expense) {
-                  _addNewTransaction(expense);
-                },
+                onAddTransaction: _addNewTransaction,
               ),
             ),
           );
           _refreshTransactions();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Add Transaction',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        label: const Text('Add Transaction', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -304,85 +305,65 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-      color: isNegative
-          ? (isDark
-              ? Colors.red.shade900.withAlpha(102)
-              : Colors.red.shade50.withAlpha(204))
-          : (isDark
-              ? Colors.deepPurple.shade900.withAlpha(51)
-              : Colors.deepPurple.shade50.withAlpha(153)),
+      color: isNegative 
+          ? (isDark ? Colors.red.shade900.withValues(alpha: 0.4) : Colors.red.shade50.withValues(alpha: 0.8)) 
+          : (isDark ? Colors.deepPurple.shade900.withValues(alpha: 0.2) : Colors.deepPurple.shade50.withValues(alpha: 0.6)),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              isNegative ? 'OVERDRAFT / DEBT' : 'AVAILABLE BALANCE',
+              isNegative ? 'OVERDRAFT / DEBT' : 'AVAILABLE BALANCE', 
               style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isNegative
-                      ? (isDark ? Colors.red.shade300 : Colors.red.shade900)
-                      : (isDark ? Colors.grey.shade400 : Colors.blueGrey),
-                  letterSpacing: 1.2),
+                fontSize: 12, 
+                fontWeight: FontWeight.bold, 
+                color: isNegative ? (isDark ? Colors.red.shade300 : Colors.red.shade900) : (isDark ? Colors.grey.shade400 : Colors.blueGrey), 
+                letterSpacing: 1.2
+              ),
             ),
             const SizedBox(height: 8.0),
             Text(
-              isNegative
-                  ? '-Rs. ${displayBalance(_totalBalance)}'
+              isNegative 
+                  ? '-Rs. ${displayBalance(_totalBalance)}' 
                   : 'Rs. ${displayBalance(_totalBalance)}',
               style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w900,
-                  color: isNegative
-                      ? (isDark ? Colors.red.shade400 : Colors.red.shade800)
-                      : (isDark
-                          ? Colors.deepPurple.shade200
-                          : Colors.deepPurple.shade800)),
+                fontSize: 34, 
+                fontWeight: FontWeight.w900, 
+                color: isNegative ? (isDark ? Colors.red.shade400 : Colors.red.shade800) : (isDark ? Colors.deepPurple.shade200 : Colors.deepPurple.shade800)
+              ),
             ),
             const SizedBox(height: 20.0),
-            Divider(color: isDark ? Colors.white12 : Colors.black12),
+            Divider(color: isDark ? Colors.white12 : Colors.black12), 
             const SizedBox(height: 12.0),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildBalanceStat(Icons.arrow_downward_rounded,
-                    Colors.green.shade400, 'Income', _totalIncome, isDark),
-                Container(
-                    height: 30,
-                    width: 1,
-                    color: isDark ? Colors.white12 : Colors.black12),
-                _buildBalanceStat(Icons.arrow_upward_rounded,
-                    Colors.orange.shade400, 'Expense', _totalExpense, isDark),
+                _buildBalanceStat(Icons.arrow_downward_rounded, Colors.green.shade400, 'Income', _totalIncome, isDark), 
+                Container(height: 30, width: 1, color: isDark ? Colors.white12 : Colors.black12), 
+                _buildBalanceStat(Icons.arrow_upward_rounded, Colors.orange.shade400, 'Expense', _totalExpense, isDark), 
               ],
             ),
           ],
         ),
       ),
     );
-  }
+  } 
 
-  Widget _buildBalanceStat(IconData icon, Color color, String label,
-      double amount, bool isDark) {
+  Widget _buildBalanceStat(IconData icon, Color color, String label, double amount, bool isDark) {
     return Row(
       children: [
         CircleAvatar(
           radius: 16,
-          backgroundColor: color.withAlpha(30),
+          backgroundColor: color.withValues(alpha: 0.12),
           child: Icon(icon, color: color, size: 18),
         ),
         const SizedBox(width: 8.0),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: TextStyle(
-                    color: isDark ? Colors.grey.shade400 : Colors.grey,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500)),
-            Text('Rs. ${amount.toStringAsFixed(2)}',
-                style: TextStyle(
-                    color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+            Text(label, style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey, fontSize: 11, fontWeight: FontWeight.w500)),
+            Text('Rs. ${amount.toStringAsFixed(2)}', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
           ],
         ),
       ],
@@ -393,30 +374,21 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
-          side: BorderSide(
-              color: isDark ? Colors.white10 : const Color(0xFFE9ECEF))),
-      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(20.0), 
+        side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF))
+      ),
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white, 
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ANALYTICS OVERVIEW',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.grey.shade400 : Colors.blueGrey,
-                    letterSpacing: 1.2)),
+            Text('ANALYTICS OVERVIEW', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.grey.shade400 : Colors.blueGrey, letterSpacing: 1.2)),
             const SizedBox(height: 24.0),
             _transactions.isEmpty
                 ? const SizedBox(
                     height: 140,
-                    child: Center(
-                        child: Text('📊 Add transactions for analytics',
-                            style: TextStyle(
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w500))),
+                    child: Center(child: Text('📊 Add transactions for analytics', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500))),
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -425,14 +397,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                                builder: (context) => const AnalyticsScreen()),
+                            MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
                           );
                         },
                         child: SizedBox(
                           height: 130,
                           width: 130,
-                          child: PieChart(
+                          child: PieChart( 
                             PieChartData(
                               sectionsSpace: 5,
                               centerSpaceRadius: 35,
@@ -448,26 +419,20 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AnalyticsScreen()),
+                                MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
                               );
                             },
-                            child: _buildChartIndicator(
-                                Colors.green.shade400, 'Income ➡️', isDark),
+                            child: _buildChartIndicator(Colors.green.shade400, 'Income ➡️', isDark),
                           ),
                           const SizedBox(height: 18.0),
                           GestureDetector(
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AnalyticsScreen()),
+                                MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
                               );
                             },
-                            child: _buildChartIndicator(
-                                Colors.orange.shade400, 'Expense ➡️', isDark),
+                            child: _buildChartIndicator(Colors.orange.shade400, 'Expense ➡️', isDark),
                           ),
                         ],
                       ),
@@ -479,38 +444,34 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  Widget _buildTransactionListSection(
-      List<Map<String, dynamic>> filteredList, bool isDark) {
+  Widget _buildTransactionListSection(List<Map<String, dynamic>> filteredList, bool isDark) {
     Widget listWidget = filteredList.isEmpty
         ? const Padding(
             padding: EdgeInsets.symmetric(vertical: 32.0),
-            child: Center(
-                child: Text('No matching transactions found! 🔍',
-                    style: TextStyle(color: Colors.grey))),
+            child: Center(child: Text('No matching transactions found! 🔍', style: TextStyle(color: Colors.grey))),
           )
         : ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: filteredList.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (context, index) { 
               final tx = filteredList[index];
               final isIncome = tx['type'] == 'Income';
               final style = _getCategoryStyle(tx['title'], tx['type']);
               final txAmount = (tx['amount'] as num).toDouble();
 
               return Dismissible(
-                key: Key(tx['id'].toString()),
-                direction: DismissDirection.endToStart,
+                key: Key(tx['id'].toString()), 
+                direction: DismissDirection.endToStart, 
                 background: Container(
                   margin: const EdgeInsets.only(bottom: 12.0),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade400,
+                    color: Colors.red.shade400, 
                     borderRadius: BorderRadius.circular(16.0),
                   ),
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: const Icon(Icons.delete_sweep_rounded,
-                      color: Colors.white, size: 28),
+                  child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 28),
                 ),
                 onDismissed: (direction) async {
                   await _dbHelper.deleteTransaction(tx['id']);
@@ -526,25 +487,19 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 },
                 child: GestureDetector(
                   onLongPress: () async {
-                    // ✅ Parse transaction data to ExpenseModel
-                    final expense = ExpenseModel(
-                      id: tx['id'],
-                      title: tx['title'],
-                      amount: (tx['amount'] as num).toDouble(),
-                      date: DateTime.now(),
-                      category: ExpenseModel.parseCategory(tx['category']),
-                      type: tx['type'] == 'Income'
-                          ? TransactionType.income
-                          : TransactionType.expense,
-                    );
-
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => AddTransactionScreen(
-                          initialTransaction: tx,
-                          onAddTransaction: (updatedExpense) {
-                            _updateExistingTransaction(tx['id'], updatedExpense);
+                          initialTransaction: tx, 
+                          onAddTransaction: (title, amount, type) {
+                            _updateExistingTransaction(
+                              tx['id'],
+                              title,
+                              amount,
+                              type,
+                              tx['date'],
+                            );
                           },
                         ),
                       ),
@@ -554,12 +509,10 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                   child: _buildTransactionItem(
                     title: tx['title'],
                     date: tx['date'],
-                    amount:
-                        '${isIncome ? '+' : '-'} Rs. ${txAmount.toStringAsFixed(2)}',
-                    amountColor:
-                        isIncome ? Colors.green.shade400 : Colors.red.shade400,
-                    iconColor: style['color'],
-                    icon: style['icon'],
+                    amount: '${isIncome ? '+' : '-'} Rs. ${txAmount.toStringAsFixed(2)}',
+                    amountColor: isIncome ? Colors.green.shade400 : Colors.red.shade400, 
+                    iconColor: style['color'], 
+                    icon: style['icon'], 
                     isDark: isDark,
                   ),
                 ),
@@ -570,34 +523,26 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Recent Transactions',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF212529))),
+        Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF212529))),
         const SizedBox(height: 12.0),
-
+        
         TextField(
           onChanged: (value) => setState(() => _searchQuery = value),
           style: TextStyle(color: isDark ? Colors.white : Colors.black),
           decoration: InputDecoration(
             hintText: 'Search transactions...',
-            hintStyle:
-                TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey),
+            hintStyle: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey),
             prefixIcon: const Icon(Icons.search, color: Colors.grey),
             filled: true,
-            fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+            fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white, 
+            contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide(
-                  color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+              borderSide: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.0),
-              borderSide: BorderSide(
-                  color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
+              borderSide: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF)),
             ),
           ),
         ),
@@ -611,14 +556,11 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               child: ChoiceChip(
                 label: Text(filterType),
                 selected: isSelected,
-                selectedColor:
-                    isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade100,
+                selectedColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade100,
                 backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 labelStyle: TextStyle(
-                  color: isSelected
-                      ? (isDark
-                          ? Colors.deepPurple.shade200
-                          : Colors.deepPurple.shade800)
+                  color: isSelected 
+                      ? (isDark ? Colors.deepPurple.shade200 : Colors.deepPurple.shade800) 
                       : (isDark ? Colors.grey.shade400 : Colors.black87),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
@@ -648,20 +590,18 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     return [
       if (_totalIncome > 0)
         PieChartSectionData(
-          color: Colors.green.shade500,
+          color: Colors.green.shade500, 
           value: _totalIncome,
           title: '${incomePercent.toStringAsFixed(0)}%',
           radius: 32,
-          titleStyle: const TextStyle(
-              fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       if (_totalExpense > 0)
         PieChartSectionData(
-          color: Colors.orange.shade500,
+          color: Colors.orange.shade500, 
           value: _totalExpense,
-          title: '${expensePercent.toStringAsFixed(0)}%',
-          titleStyle: const TextStyle(
-              fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+          title: '${expensePercent.toStringAsFixed(0)}%', 
+          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
           radius: 32,
         ),
     ];
@@ -676,52 +616,38 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           decoration: BoxDecoration(shape: BoxShape.circle, color: color),
         ),
         const SizedBox(width: 8),
-        Text(text,
-            style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-                color: isDark ? Colors.white : Colors.black87)),
+        Text(text, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: isDark ? Colors.white : Colors.black87)),
       ],
     );
   }
 
   Widget _buildTransactionItem({
-    required String title,
-    required String date,
-    required String amount,
-    required Color amountColor,
-    required Color iconColor,
+    required String title, 
+    required String date, 
+    required String amount, 
+    required Color amountColor, 
+    required Color iconColor, 
     required IconData icon,
-    required bool isDark,
+    required bool isDark
   }) {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12.0),
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.0),
-          side: BorderSide(
-              color: isDark ? Colors.white10 : const Color(0xFFE9ECEF))),
-      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16.0), 
+        side: BorderSide(color: isDark ? Colors.white10 : const Color(0xFFE9ECEF))
+      ),
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white, 
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
         leading: CircleAvatar(
           radius: 20,
-          backgroundColor: iconColor.withAlpha(20),
-          child: Icon(icon, color: iconColor, size: 20),
+          backgroundColor: iconColor.withValues(alpha: 0.08), 
+          child: Icon(icon, color: iconColor, size: 20), 
         ),
-        title: Text(title,
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF212529),
-                fontSize: 15)),
-        subtitle:
-            Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        trailing: Text(amount,
-            style: TextStyle(
-                color: amountColor,
-                fontWeight: FontWeight.w700,
-                fontSize: 15)),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF212529), fontSize: 15)),
+        subtitle: Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        trailing: Text(amount, style: TextStyle(color: amountColor, fontWeight: FontWeight.w700, fontSize: 15)), 
       ),
     );
   }
