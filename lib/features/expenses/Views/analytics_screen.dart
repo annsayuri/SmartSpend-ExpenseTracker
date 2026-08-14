@@ -183,6 +183,69 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.grey : Colors.grey.shade600;
 
+    // ✅ Provider එකෙන් transactions ලබා ගැනීම
+    final provider = Provider.of<ExpenseProvider>(context);
+    final allTx = provider.transactions;
+
+    // Get display categories
+    final displayCategories = _getDisplayCategories();
+
+    // Initialize Category Map with all display categories
+    Map<String, double> categoryMap = {};
+    for (var cat in displayCategories) {
+      categoryMap[cat] = 0.0;
+    }
+
+    double total = 0.0;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetType =
+        _isExpenseMode ? TransactionType.expense : TransactionType.income;
+
+    // Filter & Calculate totals
+    for (var tx in allTx) {
+      if (tx.type == targetType) {
+        bool includeTx = false;
+        final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
+
+        if (_isWeekly) {
+          final differenceInDays = today.difference(txDate).inDays;
+          if (differenceInDays >= 0 && differenceInDays < 7) {
+            includeTx = true;
+          }
+        } else {
+          if (tx.date.month == now.month && tx.date.year == now.year) {
+            includeTx = true;
+          }
+        }
+
+        if (includeTx) {
+          total += tx.amount;
+          String categoryLabel = _getCategoryName(tx.category);
+          if (categoryMap.containsKey(categoryLabel)) {
+            categoryMap[categoryLabel] =
+                (categoryMap[categoryLabel] ?? 0.0) + tx.amount;
+          } else {
+            // If category not in map, add to "Other"
+            categoryMap['Other'] = (categoryMap['Other'] ?? 0.0) + tx.amount;
+          }
+        }
+      }
+    }
+
+    // Get non-zero categories for bar chart
+    final List<MapEntry<String, double>> nonZeroEntries =
+        categoryMap.entries.where((e) => e.value > 0).toList();
+
+    // Sort by amount descending
+    nonZeroEntries.sort((a, b) => b.value.compareTo(a.value));
+
+    final List<String> categories =
+        nonZeroEntries.map((e) => e.key).toList();
+    final List<double> amounts = nonZeroEntries.map((e) => e.value).toList();
+
+    final Color activeThemeColor =
+        _isExpenseMode ? Colors.orangeAccent : Colors.greenAccent.shade700;
     final List<String> categories = _categoryData.keys.toList();
     final Color activeThemeColor = _isExpenseMode ? Colors.redAccent : Colors.green;
 

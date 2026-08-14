@@ -1,3 +1,4 @@
+
 enum TransactionType { income, expense }
 
 enum ExpenseCategory { food, transport, entertainment, bills, education, salary, savings, others }

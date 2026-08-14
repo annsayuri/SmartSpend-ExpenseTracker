@@ -132,6 +132,35 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   if (newValue != null) {
                     setState(() {
                       _selectedType = newValue;
+                      _selectedCategory = _availableCategories.first;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16.0),
+
+              // Category Dropdown
+              DropdownButtonFormField<ExpenseCategory>(
+                initialValue: _availableCategories.contains(_selectedCategory)
+                    ? _selectedCategory
+                    : _availableCategories.first,
+                decoration: InputDecoration(
+                  labelText: 'Category',
+                  prefixIcon: const Icon(Icons.category_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                ),
+                items: _availableCategories.map((ExpenseCategory category) {
+                  return DropdownMenuItem<ExpenseCategory>(
+                    value: category,
+                    child: Text(ExpenseModel.getCategoryDisplayName(category)),
+                  );
+                }).toList(),
+                onChanged: (ExpenseCategory? newCategory) {
+                  if (newCategory != null) {
+                    setState(() {
+                      _selectedCategory = newCategory;
                     });
                   }
                 },

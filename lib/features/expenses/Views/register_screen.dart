@@ -185,7 +185,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   // 👑 Role Selection Dropdown
                   DropdownButtonFormField<Role>(
-                    value: _selectedRole,
+                    initialValue: _selectedRole,
                     decoration: InputDecoration(
                       labelText: 'User Role',
                       prefixIcon: const Icon(Icons.admin_panel_settings_outlined),
