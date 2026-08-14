@@ -346,4 +346,3 @@ class DBHelper {
     await db.delete('bills');
   }
 }
-}
