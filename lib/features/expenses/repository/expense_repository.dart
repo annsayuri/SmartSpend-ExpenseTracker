@@ -1,4 +1,5 @@
 import 'package:smartspend_expensetracker/core/database/db_helper.dart';
+import 'package:smartspend_expensetracker/features/expenses/model/expense_model.dart';
 
 class ExpenseRepository {
   final DBHelper _dbHelper = DBHelper();
