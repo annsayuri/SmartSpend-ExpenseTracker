@@ -8,61 +8,181 @@ class BillReminderScreen extends StatefulWidget {
   State<BillReminderScreen> createState() => _BillReminderScreenState();
 }
 
-class _BillReminderScreenState extends State<BillReminderScreen> {
+class _BillReminderScreenState extends State<BillReminderScreen> with WidgetsBindingObserver {
   final DBHelper _dbHelper = DBHelper();
+  List<Map<String, dynamic>> _bills = [];
+  bool _isLoading = true;
 
-  // Dummy / Initial Bills Data List
-  final List<Map<String, dynamic>> _bills = [
-    {
-      'id': 1,
-      'title': 'Electricity Bill',
-      'amount': 4500.0,
-      'date': '25/07/2026',
-      'isPaid': false,
-    },
-    {
-      'id': 2,
-      'title': 'Dialog Broadband',
-      'amount': 2990.0,
-      'date': '28/07/2026',
-      'isPaid': false,
-    },
-    {
-      'id': 3,
-      'title': 'Water Bill',
-      'amount': 850.0,
-      'date': '02/08/2026',
-      'isPaid': true,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadBills();
+  }
 
-  // 💳 Bill එකක් Paid කරලා Main Expense DB එකට Add කිරීමේ Logic එක
-  Future<void> _markAsPaid(int index) async {
-    final bill = _bills[index];
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
-    // 1. Transaction Record එකක් විදියට DB එකට Insert කිරීම
-    await _dbHelper.insertTransaction({
-      'title': bill['title'],
-      'amount': bill['amount'],
-      'type': 'Expense',
-      'date': bill['date'],
-    });
-
-    // 2. UI එකේ Bill එක 'Paid' විදිහට Update කිරීම
-    setState(() {
-      _bills[index]['isPaid'] = true;
-    });
-
-    // 3. User ට Confirmation Message එකක් දීම
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${bill['title']} Paid & Added to Expenses! 🎉'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+  // App Lifecycle වෙනස් වෙන විට (උදා: Navigation Back ආ විට) Data Auto-Refresh වීම 🔄
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadBills();
     }
+  }
+
+  // 1. Database එකෙන් Bills Fetch කිරීම 📥
+  Future<void> _loadBills() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    final data = await _dbHelper.getUserBills();
+    if (!mounted) return;
+    setState(() {
+      _bills = data;
+      _isLoading = false;
+    });
+  }
+
+  // 2. Bill එකක් Pay කළ පසු DB එක Update කිරීම 💳
+  Future<void> _markAsPaid(Map<String, dynamic> bill) async {
+    try {
+      await _dbHelper.markBillAsPaid(
+        bill['id'],
+        bill['title'],
+        (bill['amount'] as num).toDouble(),
+        bill['due_date'],
+      );
+
+      await _loadBills(); // UI එක Refresh කිරීම
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${bill['title']} Paid & Added to Expenses! 🎉'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to process payment. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // 3. අලුත් Bill එකක් Add කිරීමේ Modal Dialog එක ➕
+  void _showAddBillDialog() {
+    final titleController = TextEditingController();
+    final amountController = TextEditingController();
+    final dateController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          top: 20,
+          left: 20,
+          right: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Add New Bill Reminder 🔔',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'Bill Title (e.g., Water Bill)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: amountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Amount (Rs.)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: dateController,
+              readOnly: true,
+              decoration: const InputDecoration(
+                labelText: 'Due Date',
+                border: OutlineInputBorder(),
+                suffixIcon: Icon(Icons.calendar_today),
+              ),
+              onTap: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime(2030),
+                );
+                if (picked != null) {
+                  dateController.text =
+                      "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () async {
+                  if (titleController.text.isNotEmpty &&
+                      amountController.text.isNotEmpty &&
+                      dateController.text.isNotEmpty) {
+                    final double? amt = double.tryParse(amountController.text);
+                    if (amt != null) {
+                      await _dbHelper.insertBill(
+                        titleController.text.trim(),
+                        amt,
+                        dateController.text.trim(),
+                      );
+                      if (mounted) Navigator.pop(ctx);
+                      _loadBills(); // Refresh List
+                    }
+                  }
+                },
+                child: const Text('Save Bill Reminder'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 4. Bill එකක් Delete කිරීම 🗑️
+  Future<void> _deleteBill(int id) async {
+    await _dbHelper.deleteBill(id);
+    _loadBills();
   }
 
   @override
@@ -80,6 +200,20 @@ class _BillReminderScreenState extends State<BillReminderScreen> {
         backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadBills,
+            tooltip: 'Refresh Bills',
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddBillDialog,
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Bill'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -97,123 +231,150 @@ class _BillReminderScreenState extends State<BillReminderScreen> {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: ListView.builder(
-                itemCount: _bills.length,
-                itemBuilder: (context, index) {
-                  final bill = _bills[index];
-                  final isPaid = bill['isPaid'] as bool;
-
-                  return Card(
-                    color: cardColor,
-                    elevation: 0,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: isDark ? Colors.white10 : const Color(0xFFE9ECEF),
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          // Status Icon
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: isPaid
-                                  ? Colors.green.withValues(alpha: 0.15)
-                                  : Colors.orange.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isPaid ? Icons.check_circle_rounded : Icons.receipt_long_rounded,
-                              color: isPaid ? Colors.green : Colors.orange,
-                              size: 24,
-                            ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _bills.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No bills added yet! ✨\nClick "+ Add Bill" to create one.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: subTextColor, fontSize: 14),
                           ),
-                          const SizedBox(width: 16),
+                        )
+                      : ListView.builder(
+                          itemCount: _bills.length,
+                          itemBuilder: (context, index) {
+                            final bill = _bills[index];
+                            final isPaid = bill['is_paid'] == 1;
 
-                          // Bill Title & Due Date
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  bill['title'],
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: textColor,
-                                    decoration: isPaid ? TextDecoration.lineThrough : null,
+                            return Dismissible(
+                              key: Key(bill['id'].toString()),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 20),
+                                color: Colors.red,
+                                child: const Icon(Icons.delete, color: Colors.white),
+                              ),
+                              onDismissed: (direction) => _deleteBill(bill['id']),
+                              child: Card(
+                                color: cardColor,
+                                elevation: 0,
+                                margin: const EdgeInsets.only(bottom: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(
+                                    color: isDark ? Colors.white10 : const Color(0xFFE9ECEF),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Due: ${bill['date']}',
-                                  style: TextStyle(fontSize: 12, color: subTextColor),
-                                ),
-                              ],
-                            ),
-                          ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Row(
+                                    children: [
+                                      // Status Icon
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: isPaid
+                                              ? Colors.green.withValues(alpha: 0.15)
+                                              : Colors.orange.withValues(alpha: 0.15),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          isPaid
+                                              ? Icons.check_circle_rounded
+                                              : Icons.receipt_long_rounded,
+                                          color: isPaid ? Colors.green : Colors.orange,
+                                          size: 24,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
 
-                          // Amount & Action Button
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Rs. ${(bill['amount'] as double).toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: isPaid ? Colors.grey : Colors.redAccent,
+                                      // Bill Title & Due Date
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              bill['title'],
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: textColor,
+                                                decoration:
+                                                    isPaid ? TextDecoration.lineThrough : null,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Due: ${bill['due_date']}',
+                                              style: TextStyle(fontSize: 12, color: subTextColor),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      // Amount & Action Button
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            'Rs. ${(bill['amount'] as num).toDouble().toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: isPaid ? Colors.grey : Colors.redAccent,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          if (!isPaid)
+                                            SizedBox(
+                                              height: 30,
+                                              child: ElevatedButton(
+                                                onPressed: () => _markAsPaid(bill),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.deepPurple,
+                                                  foregroundColor: Colors.white,
+                                                  elevation: 0,
+                                                  padding:
+                                                      const EdgeInsets.symmetric(horizontal: 12),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                ),
+                                                child: const Text(
+                                                  'Pay Now',
+                                                  style: TextStyle(
+                                                      fontSize: 11, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            )
+                                          else
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green.withValues(alpha: 0.15),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: const Text(
+                                                'PAID',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              if (!isPaid)
-                                SizedBox(
-                                  height: 30,
-                                  child: ElevatedButton(
-                                    onPressed: () => _markAsPaid(index),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.deepPurple,
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      'Pay Now',
-                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                )
-                              else
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Text(
-                                    'PAID',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),

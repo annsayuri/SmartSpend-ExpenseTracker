@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import '../model/expense_model.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  final Function(ExpenseModel) onAddTransaction;
+  final Function(String title, double amount, String type) onAddTransaction;
+  
+  // පැරණි දත්ත ලබා ගැනීමට Map එකක් (Edit කිරීමේදී)
   final Map<String, dynamic>? initialTransaction;
 
   const AddTransactionScreen({
-    super.key,
+    super.key, 
     required this.onAddTransaction,
     this.initialTransaction,
   });
@@ -19,52 +20,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _amountController;
-  String _selectedType = 'Expense';
-  ExpenseCategory _selectedCategory = ExpenseCategory.food;
+  String _selectedType = 'Income';
   bool _isEditing = false;
-
-  List<ExpenseCategory> get _availableCategories {
-    if (_selectedType == 'Income') {
-      return [
-        ExpenseCategory.salary,
-        ExpenseCategory.allowance,
-        ExpenseCategory.business,
-        ExpenseCategory.gift,
-        ExpenseCategory.bonus,
-        ExpenseCategory.wage,
-        ExpenseCategory.other,
-      ];
-    } else {
-      return [
-        ExpenseCategory.food,
-        ExpenseCategory.transport,
-        ExpenseCategory.bills,
-        ExpenseCategory.shopping,
-        ExpenseCategory.education,
-        ExpenseCategory.entertainment,
-        ExpenseCategory.healthcare,
-        ExpenseCategory.other,
-      ];
-    }
-  }
 
   @override
   void initState() {
     super.initState();
-
+    
+    // සංස්කරණය සඳහා දත්ත ලැබී ඇත්දැයි පරීක්ෂා කිරීම
     if (widget.initialTransaction != null) {
       _isEditing = true;
-      _titleController =
-          TextEditingController(text: widget.initialTransaction!['title']);
-      _amountController = TextEditingController(
-          text: widget.initialTransaction!['amount'].toString());
-      _selectedType = widget.initialTransaction!['type'] ?? 'Expense';
-
-      if (widget.initialTransaction!['category'] != null) {
-        _selectedCategory =
-            ExpenseModel.parseCategory(widget.initialTransaction!['category']);
-      }
+      _titleController = TextEditingController(text: widget.initialTransaction!['title']);
+      _amountController = TextEditingController(text: widget.initialTransaction!['amount'].toString());
+      _selectedType = widget.initialTransaction!['type'];
     } else {
+      // අලුතින් ඇතුළත් කරන්නේ නම් හිස්ව ආරම්භ කිරීම
       _titleController = TextEditingController();
       _amountController = TextEditingController();
     }
@@ -81,19 +51,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Transaction' : 'Add Transaction'),
+        title: Text(_isEditing ? 'Edit Transaction ✏️' : 'Add Transaction 💰'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Title Field
+              // 📝 Title Field Validation
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
@@ -105,7 +75,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title';
+                    return 'Please enter a title 📝';
                   }
                   if (value.trim().length < 2) {
                     return 'Title must be at least 2 characters long';
@@ -115,11 +85,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
               const SizedBox(height: 16.0),
 
-              // Amount Field
+              // 💰 Amount Field Validation
               TextFormField(
                 controller: _amountController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   labelText: 'Amount',
                   prefixIcon: const Icon(Icons.attach_money_outlined),
@@ -129,7 +98,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter an amount';
+                    return 'Please enter an amount 💰';
                   }
                   final parsedAmount = double.tryParse(value.trim());
                   if (parsedAmount == null) {
@@ -143,12 +112,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
               const SizedBox(height: 16.0),
 
-              // Transaction Type Dropdown
+              // 🏷️ Transaction Type Dropdown
               DropdownButtonFormField<String>(
                 initialValue: _selectedType,
                 decoration: InputDecoration(
                   labelText: 'Transaction Type',
-                  prefixIcon: const Icon(Icons.swap_horiz_outlined),
+                  prefixIcon: const Icon(Icons.category_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
                   ),
@@ -198,7 +167,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
               const SizedBox(height: 28.0),
 
-              // Submit Button
+              // 🚀 Submit Button
               SizedBox(
                 height: 50.0,
                 child: ElevatedButton(
@@ -211,26 +180,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // Create ExpenseModel object
-                      final expense = ExpenseModel(
-                        title: _titleController.text.trim(),
-                        amount: double.parse(_amountController.text.trim()),
-                        date: DateTime.now(),
-                        category: _selectedCategory,
-                        type: _selectedType == 'Income'
-                            ? TransactionType.income
-                            : TransactionType.expense,
+                      // 🚀 දත්ත ටික Callback එක හරහා යැවීම
+                      widget.onAddTransaction(
+                        _titleController.text.trim(),
+                        double.parse(_amountController.text.trim()),
+                        _selectedType,
                       );
 
-                      // Pass the full ExpenseModel to parent
-                      widget.onAddTransaction(expense);
-
+                      // 🎉 Success Message එකක් පෙන්වීම
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            _isEditing
-                                ? 'Transaction updated successfully!'
-                                : 'Transaction added successfully!',
+                            _isEditing 
+                              ? 'Transaction updated successfully! ✨' 
+                              : 'Transaction added successfully! 🎉',
                           ),
                           backgroundColor: Colors.green,
                           behavior: SnackBarBehavior.floating,
@@ -241,13 +204,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         ),
                       );
 
+                      // 🔙 Screen එක Close කිරීම
                       Navigator.pop(context);
                     }
                   },
                   child: Text(
-                    _isEditing ? 'Update Transaction' : 'Add Transaction',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                    _isEditing ? 'Update Transaction ✏️' : 'Add Transaction 🚀',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
