@@ -10,23 +10,23 @@ SmartSpend is a comprehensive mobile expense tracking application built with Flu
 [![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)]()
 
 ---
-## 📱 About SmartSpend
+##  About SmartSpend
 
 SmartSpend is a mobile expense tracking application built with Flutter that helps users monitor their daily spending, set budgets, and gain insights into their financial habits through visual analytics.
 
 ---
-## ✨ Features
+##  Features
 
-- ✅ **Create** - Add expenses with amount, category, date, and notes
-- 📖 **Read** - View all transactions with search and filter capabilities
-- ✏️ **Update** - Edit existing expense details
-- 🗑️ **Delete** - Remove unwanted expense entries
-- 📊 **Analytics** - Visual charts for spending by category
-- 💰 **Budget Management** - Set monthly budgets and track progress
-- 🔍 **Search & Filter** - Find expenses by category, date, or amount
+-  **Create** - Add expenses with amount, category, date, and notes
+-  **Read** - View all transactions with search and filter capabilities
+-  **Update** - Edit existing expense details
+-  **Delete** - Remove unwanted expense entries
+-  **Analytics** - Visual charts for spending by category
+-  **Budget Management** - Set monthly budgets and track progress
+-  **Search & Filter** - Find expenses by category, date, or amount
 ---
 
-## 🛠️ Technologies Used
+##  Technologies Used
 
 - **Framework:** Flutter (Dart)
 - **Database:** SQLite (sqflite)
@@ -36,11 +36,11 @@ SmartSpend is a mobile expense tracking application built with Flutter that help
 
 ---
 
-## 🏗️ Project Structure
+##  Project Structure
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Flutter SDK (>=3.0.0)
@@ -69,7 +69,7 @@ flutter run
 
 - ``` flutter pub add fl_chart ```
 
-### 📊 Database Schema
+###  Database Schema
 
 ```sql
 CREATE TABLE expenses(
@@ -92,7 +92,7 @@ CREATE TABLE budget(
 ```
 
 --- 
-### 📝 Screens Overview
+###  Screens Overview
 
     - Home - Dashboard with spending summary and quick add button
     - Add/Edit Expense - Form for creating/updating expenses
@@ -102,14 +102,14 @@ CREATE TABLE budget(
     - Settings - Currency preference and data export
 
 ---
- ### 📅 Timeline
+ ###  Timeline
 
     - Project Proposal: 15 July 2026
     - Final Submission: 4 August 2026
 
 ----
 
-### 👨‍💻 Author
+###  Author
 
 - **Name:** Ann Sayuri S. Kotikawaththa
 - **E-mail:** **[annsayu12@gmail.com](mailto:annsayu12@gmail.com)**
@@ -120,7 +120,7 @@ CREATE TABLE budget(
 
 ---
 
-📄 License
+ License
 
 This project is licensed under the MIT License.
 
