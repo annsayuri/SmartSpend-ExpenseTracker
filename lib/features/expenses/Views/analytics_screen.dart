@@ -145,17 +145,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Export Transactions 📄',
+                'Export Transactions',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               ListTile(
                 leading: const Icon(Icons.picture_as_pdf, color: Colors.redAccent, size: 30),
-                title: const Text('Export as PDF Document', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Download or print formatted PDF report'),
+                title: const Text('Export & Share PDF Document', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Save or share formatted PDF report'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await ExportService.exportAndSharePDF(_rawTransactions);
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.print, color: Colors.blueAccent, size: 30),
+                title: const Text('Print PDF Directly', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Send directly to a printer'),
                 onTap: () {
                   Navigator.pop(context);
-                  ExportService.exportToPDF(_rawTransactions);
+                  ExportService.printPDF(_rawTransactions);
                 },
               ),
               const Divider(),
@@ -189,7 +199,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Advanced Analytics 📊', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Advanced Analytics', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -236,7 +246,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  'Expenses 💸',
+                                  'Expenses',
                                   style: TextStyle(
                                     color: _isExpenseMode ? Colors.redAccent : subTextColor,
                                     fontWeight: FontWeight.bold,
@@ -264,7 +274,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  'Income 💰',
+                                  'Income',
                                   style: TextStyle(
                                     color: !_isExpenseMode ? Colors.green : subTextColor,
                                     fontWeight: FontWeight.bold,
@@ -464,8 +474,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         padding: const EdgeInsets.all(20.0),
                         child: Text(
                           _isExpenseMode
-                              ? 'No expense records found for this period! 📉'
-                              : 'No income records found for this period! 📈',
+                              ? 'No expense records found for this period!'
+                              : 'No income records found for this period!',
                           style: TextStyle(color: subTextColor),
                         ),
                       ),

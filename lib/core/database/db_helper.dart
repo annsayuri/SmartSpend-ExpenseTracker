@@ -95,7 +95,7 @@ class DBHelper {
   }
 
   // ---------------------------------------------------------------------------
-  // 🔐 AUTHENTICATION METHODS
+  // AUTHENTICATION METHODS
   // ---------------------------------------------------------------------------
 
   Future<bool> registerUser(String name, String email, String password, {Role role = Role.USER}) async {
@@ -146,7 +146,7 @@ class DBHelper {
         }
       }
     } catch (e) {
-      // Log error if needed
+      // Log error
     }
     return null;
   }
@@ -196,7 +196,7 @@ class DBHelper {
   }
 
   // ---------------------------------------------------------------------------
-  // 💸 EXPENSE / TRANSACTION METHODS
+  // EXPENSE / TRANSACTION METHODS
   // ---------------------------------------------------------------------------
 
   Future<int> deleteAllTransactions() async {
@@ -256,7 +256,7 @@ class DBHelper {
   }
 
   // ---------------------------------------------------------------------------
-  // 🎯 BUDGET METHODS
+  // BUDGET METHODS
   // ---------------------------------------------------------------------------
   
   Future<double> getBudget() async {
@@ -270,7 +270,7 @@ class DBHelper {
   }
 
   // ---------------------------------------------------------------------------
-  // 🔔 BILL REMINDER METHODS
+  // BILL REMINDER METHODS
   // ---------------------------------------------------------------------------
 
   Future<int> insertBill(String title, double amount, String dueDate) async {
@@ -336,10 +336,9 @@ class DBHelper {
   }
 
   // ---------------------------------------------------------------------------
-  // 🧹 COMPLETE APP RESET METHOD
+  // COMPLETE APP RESET METHOD
   // ---------------------------------------------------------------------------
 
-  /// Clean all app data from Database (Transactions & Bills)
   Future<void> deleteAllData() async {
     final db = await database;
     await db.delete('transactions');
