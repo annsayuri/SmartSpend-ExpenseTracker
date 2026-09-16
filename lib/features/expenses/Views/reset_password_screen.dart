@@ -43,7 +43,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Password Reset Successful! Please Login. 🎉'),
+            content: Text('Password Reset Successful! Please Login. '),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -123,7 +123,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     ),
                     validator: (val) {
                       if (val == null || val.isEmpty) {
-                        return 'Please enter a new password 🔑';
+                        return 'Please enter a new password ';
                       }
                       if (val.length < 6) {
                         return 'Password must be at least 6 characters long';
@@ -173,7 +173,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             width: 20,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
-                        : const Text('Reset Password 🚀', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        : const Text('Reset Password ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
