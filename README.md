@@ -20,8 +20,8 @@ SmartSpend is a mobile expense tracking application built with Flutter that help
 
 | Screen | Screen | Screen |
 | :---: | :---: | :---: |
-| **Logging** <br> <img src="images/01.loging%20.png" width="200"> | **Dashboard** <br> <img src="images/02.dashboard.png" width="200"> | **Budget** <br> <img src="images/03.budget.png" width="200"> |
-| **Bills** <br> <img src="images/04.bills.png" width="200"> | **Analytics** <br> <img src="images/05.Analytics.png" width="200"> | **Settings** <br> <img src="images/06.settings.png" width="200"> |
+| **Logging** <br> <img src="images/01.loging%20.png" width="100"> | **Dashboard** <br> <img src="images/02.dashboard.png" width="100"> | **Budget** <br> <img src="images/03.budget.png" width="100"> |
+| **Bills** <br> <img src="images/04.bills.png" width="100"> | **Analytics** <br> <img src="images/05.Analytics.png" width="100"> | **Settings** <br> <img src="images/06.settings.png" width="100"> |
 
 ---
 ## ✨ Features
