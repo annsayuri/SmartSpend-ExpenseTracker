@@ -64,7 +64,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
         .fold(0.0, (sum, tx) => sum + (tx['amount'] as num).toDouble());
   }
 
-  // 🟢 Category Detect Method - එකතු කරන ලදී
+  // 🟢 Category Detect Method ekathu kireema
   String _detectCategory(String title, String type) {
     String lowerTitle = title.toLowerCase();
     
@@ -120,7 +120,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     }
   }
 
-  // 🟢 Updated - Category එකත් එක්ක Transaction Add කිරීම
+  // 🟢 Updated - Category ekath ekka Transaction Add kireema
   void _addNewTransaction(String title, double amount, String type) async {
     String currentDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
     String category = _detectCategory(title, type);
@@ -130,14 +130,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       'amount': amount,
       'type': type,
       'date': currentDate,
-      'category': category,  // 👈 Category එකතු කරන ලදී
+      'category': category,  // 👈 Category ekathu kireema
     });
     if (!mounted) return;
     setState(() => _isLoading = true);
     _refreshTransactions(); 
   }
 
-  // 🟢 Updated - Category එකත් එක්ක Transaction Update කිරීම
+  // 🟢 Updated - Category ekath ekka Transaction Update kireema
   void _updateExistingTransaction(int id, String title, double amount, String type, String date) async {
     String category = _detectCategory(title, type);
     
@@ -147,7 +147,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       'amount': amount,
       'type': type,
       'date': date,
-      'category': category,  // 👈 Category එකතු කරන ලදී
+      'category': category,  // 👈 Category ekathu kireema
     });
     if (!mounted) return;
     setState(() => _isLoading = true);
