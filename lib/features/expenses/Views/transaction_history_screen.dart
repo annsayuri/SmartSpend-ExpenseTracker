@@ -15,7 +15,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   List<Map<String, dynamic>> _filteredTransactions = [];
   bool _isLoading = true;
 
-  // Filters සඳහා Variables
+  // Filters sadaha Variables
   String _searchQuery = '';
   String _selectedType = 'All';
   DateTimeRange? _selectedDateRange;
@@ -26,7 +26,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     _loadAllTransactions();
   }
 
-  // Database එකෙන් සියලුම දත්ත ලබා ගැනීම
+  // Database eken all data laba ganeema
   void _loadAllTransactions() async {
     final data = await _dbHelper.getAllTransactions();
     if (!mounted) return;
@@ -37,7 +37,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     });
   }
 
-  // Search සහ Filters ක්‍රියාත්මක කරන Function එක
+  // Search and Filters ක්start krna Function eka
   void _applyFilters() {
     setState(() {
       _filteredTransactions = _allTransactions.where((tx) {
@@ -67,7 +67,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     });
   }
 
-  // 🗑️ Transaction එක Delete කිරීමේ Function එක
+  // 🗑️ Transaction eka Delete kireeme Function එක
   void _deleteTransaction(int id) async {
     await _dbHelper.deleteTransaction(id);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -224,7 +224,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                   ),
                   const SizedBox(height: 16.0),
 
-                  // 🧾 Transactions ලැයිස්තුව (Swipe to Delete සමඟ)
+                  // 🧾 Transactions list eka (Swipe to Delete ekka)
                   Expanded(
                     child: _filteredTransactions.isEmpty
                         ? const Center(
