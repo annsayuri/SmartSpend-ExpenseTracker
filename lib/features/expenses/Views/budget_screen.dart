@@ -22,14 +22,14 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
     _loadBudgetData();
   }
 
-  // 🔄 DB එකෙන් Budget Limit එක සහ Transactions අරන් Total Expense එක හදනවා
+                                       // 🔄 DB eken Budget Limit eka ha Transactions aran Total Expense eka hadanwa
   Future<void> _loadBudgetData() async {
     setState(() => _isLoading = true);
 
-    // 1. Budget Limit එක ගන්නවා
+    // 1. Budget Limit eka gannwa
     double savedBudget = await _dbHelper.getBudget();
 
-    // 2. Transactions ඔක්කොම අරන් Expense වල එකතුව හදනවා
+                                          // 2. Transactions okkoma aran Expense wla ekathuwa hadanwa
     List<Map<String, dynamic>> allTx = await _dbHelper.getAllTransactions();
     double expenseSum = 0.0;
 
@@ -49,18 +49,18 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
     });
   }
 
-  // 💾 අලුත් Budget එකක් Save කිරීම
+                                                   // 💾 aluth Budget ekak Save kireema
   Future<void> _saveBudget() async {
     double? amount = double.tryParse(_budgetController.text);
     if (amount != null && amount > 0) {
       await _dbHelper.setBudget(amount);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Budget Limit Updated Successfully! 🎉'),
+          content: Text('Budget Limit Updated Successfully! '),
           backgroundColor: Colors.green,
         ),
       );
-      _loadBudgetData(); // Data Refresh කිරීම
+      _loadBudgetData(); // Data Refresh kireema
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -95,7 +95,7 @@ class _BudgetGoalsScreenState extends State<BudgetGoalsScreen> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Budget Goals 🎯', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Budget Goals ', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: isDark ? Colors.deepPurple.shade900 : Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
