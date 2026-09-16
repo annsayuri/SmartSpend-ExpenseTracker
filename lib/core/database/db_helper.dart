@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
 import 'package:smartspend_expensetracker/features/expenses/model/user_model.dart';
 
@@ -320,7 +321,7 @@ class DBHelper {
       'title': 'Paid: $title',
       'amount': amount,
       'category': 'Bills & Utilities',
-      'date': DateTime.now().toIso8601String().split('T')[0],
+      'date': DateFormat('dd/MM/yyyy').format(DateTime.now()),
       'type': 'Expense',
     });
   }
