@@ -48,7 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registration Successful! Please Login. 🎉'),
+            content: Text('Registration Successful! Please Login. '),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -57,7 +57,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Email already exists! Please use a different email. ❌'),
+            content: Text('Email already exists! Please use a different email. '),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -84,7 +84,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Join SmartSpend 💰',
+                    'Join SmartSpend ',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -148,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     validator: (val) {
                       if (val == null || val.isEmpty) {
-                        return 'Please enter a password 🔑';
+                        return 'Please enter a password ';
                       }
                       if (val.length < 6) {
                         return 'Password must be at least 6 characters long';
@@ -220,7 +220,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             width: 20,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
-                        : const Text('Register 🚀', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        : const Text('Register ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
