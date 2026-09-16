@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AddTransactionScreen extends StatefulWidget {
   final Function(String title, double amount, String type) onAddTransaction;
   
-  // පැරණි දත්ත ලබා ගැනීමට Map එකක් (Edit කිරීමේදී)
+  // old data ganna map ekak hadanwa
   final Map<String, dynamic>? initialTransaction;
 
   const AddTransactionScreen({
@@ -27,14 +27,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   void initState() {
     super.initState();
     
-    // සංස්කරණය සඳහා දත්ත ලැබී ඇත්දැයි පරීක්ෂා කිරීම
+    // edit krnna data thiynwda kiyl blnw
     if (widget.initialTransaction != null) {
       _isEditing = true;
       _titleController = TextEditingController(text: widget.initialTransaction!['title']);
       _amountController = TextEditingController(text: widget.initialTransaction!['amount'].toString());
       _selectedType = widget.initialTransaction!['type'];
     } else {
-      // අලුතින් ඇතුළත් කරන්නේ නම් හිස්ව ආරම්භ කිරීම
+      // aluth add krnwnm his wa ganna
       _titleController = TextEditingController();
       _amountController = TextEditingController();
     }
@@ -151,20 +151,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // 🚀 දත්ත ටික Callback එක හරහා යැවීම
+                      // 🚀 data tika Callback eka haaha yaweema
                       widget.onAddTransaction(
                         _titleController.text.trim(),
                         double.parse(_amountController.text.trim()),
                         _selectedType,
                       );
 
-                      // 🎉 Success Message එකක් පෙන්වීම
+                      //  Success Message eka penweema
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
                             _isEditing 
-                              ? 'Transaction updated successfully! ✨' 
-                              : 'Transaction added successfully! 🎉',
+                              ? 'Transaction updated successfully! ' 
+                              : 'Transaction added successfully! ',
                           ),
                           backgroundColor: Colors.green,
                           behavior: SnackBarBehavior.floating,
@@ -175,12 +175,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         ),
                       );
 
-                      // 🔙 Screen එක Close කිරීම
+                      //  Screen eka Close kireema
                       Navigator.pop(context);
                     }
                   },
                   child: Text(
-                    _isEditing ? 'Update Transaction ✏️' : 'Add Transaction 🚀',
+                    _isEditing ? 'Update Transaction ' : 'Add Transaction ',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
