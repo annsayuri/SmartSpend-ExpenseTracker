@@ -26,7 +26,7 @@ class _BillReminderScreenState extends State<BillReminderScreen> with WidgetsBin
     super.dispose();
   }
 
-  // App Lifecycle වෙනස් වෙන විට (උදා: Navigation Back ආ විට) Data Auto-Refresh වීම 🔄
+  // App Lifecycle wenas wenkota (ex: Navigation Back aa wita) Data Auto-Refresh wenwa 🔄
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -34,7 +34,7 @@ class _BillReminderScreenState extends State<BillReminderScreen> with WidgetsBin
     }
   }
 
-  // 1. Database එකෙන් Bills Fetch කිරීම 📥
+  // 1. Database eken  Bills Fetch kireema 📥
   Future<void> _loadBills() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
@@ -46,7 +46,7 @@ class _BillReminderScreenState extends State<BillReminderScreen> with WidgetsBin
     });
   }
 
-  // 2. Bill එකක් Pay කළ පසු DB එක Update කිරීම 💳
+  // 2. Bill ekak Pay kala pasu DB eka Update kireema 💳
   Future<void> _markAsPaid(Map<String, dynamic> bill) async {
     try {
       await _dbHelper.markBillAsPaid(
@@ -56,12 +56,13 @@ class _BillReminderScreenState extends State<BillReminderScreen> with WidgetsBin
         bill['due_date'],
       );
 
-      await _loadBills(); // UI එක Refresh කිරීම
+      // UI eka Refresh kireema
+      await _loadBills();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${bill['title']} Paid & Added to Expenses! 🎉'),
+            content: Text('${bill['title']} Paid & Added to Expenses! '),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -79,7 +80,7 @@ class _BillReminderScreenState extends State<BillReminderScreen> with WidgetsBin
     }
   }
 
-  // 3. අලුත් Bill එකක් Add කිරීමේ Modal Dialog එක ➕
+  // 3. aluth Bill ekak Add kireeme Modal Dialog eka ➕
   void _showAddBillDialog() {
     final titleController = TextEditingController();
     final amountController = TextEditingController();
@@ -103,7 +104,7 @@ class _BillReminderScreenState extends State<BillReminderScreen> with WidgetsBin
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Add New Bill Reminder 🔔',
+              'Add New Bill Reminder ',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -179,7 +180,7 @@ class _BillReminderScreenState extends State<BillReminderScreen> with WidgetsBin
     );
   }
 
-  // 4. Bill එකක් Delete කිරීම 🗑️
+  // 4. Bill ekak Delete kirrema 🗑️
   Future<void> _deleteBill(int id) async {
     await _dbHelper.deleteBill(id);
     _loadBills();
