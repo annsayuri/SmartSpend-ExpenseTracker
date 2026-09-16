@@ -103,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Profile photo removed! 🗑️'),
+          content: Text('Profile photo removed! '),
           backgroundColor: Colors.orangeAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -242,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Password updated successfully! 🎉'),
+                        content: Text('Password updated successfully! '),
                         backgroundColor: Colors.green,
                         behavior: SnackBarBehavior.floating,
                       ),
