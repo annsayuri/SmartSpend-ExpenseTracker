@@ -1,38 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/database/db_helper.dart';
-import 'core/theme/theme_provider.dart'; // 🎨 Import ThemeProvider
+import 'core/theme/theme_provider.dart';
 import 'features/expenses/views/login_screen.dart';
 import 'features/expenses/views/expense_list_screen.dart';
 
-void main() async {
-  // 1. Flutter Widgets Binding Initialize කිරීම
+void main() {
+  // 1. Flutter Widgets Binding Initialize kireema
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🧹 Database එක clear කිරීමට අවශ්‍ය වූ විට පමණක් පහත පේළිය un-comment කරන්න:
-  // await DBHelper().deleteAllTransactions();
-
-  // 2. User දැනටමත් Login වී ඇත්දැයි SharedPreferences හරහා පරීක්ෂා කිරීම 🔐
-  final dbHelper = DBHelper();
-  final userSession = await dbHelper.getCurrentUserSession();
-
   runApp(
-    // 🎨 ThemeProvider එක මුළු App එකටම Provider එකක් ලෙස Wrap කිරීම
+    // 🎨 ThemeProvider eka whole App ekatama Provider ekak widihata Wrap kireema
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
-      child: MyApp(isLoggedIn: userSession != null),
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final bool isLoggedIn;
-
-  const MyApp({super.key, required this.isLoggedIn});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 🎨 ThemeProvider එක හරහා Dynamic ලෙස Theme එක ලබා ගැනීම
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
@@ -45,11 +35,30 @@ class MyApp extends StatelessWidget {
       // 🌙 Dark Theme Configuration
       darkTheme: ThemeProvider.darkTheme,
 
-      // 🔑 Provider එකේ තියෙන ThemeMode එක مستقیم ලෙස භාවිත කිරීම
+      // 🔑 Provider එකේ තියෙන ThemeMode එක භාවිත කිරීම
       themeMode: themeProvider.themeMode,
 
-      // 🎯 User Login වී සිටී නම් ExpenseListScreen එකට, නැතහොත් LoginScreen එකට යොමු කරයි
-      home: isLoggedIn ? const ExpenseListScreen() : const LoginScreen(),
+      // 🎯 FutureBuilder භාවිතයෙන් Async ලෙස Session එක Check කිරීම
+      home: FutureBuilder<Map<String, dynamic>?>(
+        future: DBHelper().getCurrentUserSession(),
+        builder: (context, snapshot) {
+          // Database එකෙන් Data ලැබෙන තෙක් Loading Indicator එකක් පෙන්වයි
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          // User Session eka thiynwanm ExpenseListScreen ekata, nathinm LoginScreen ekata Redirect kireema
+          if (snapshot.hasData && snapshot.data != null) {
+            return const ExpenseListScreen();
+          } else {
+            return const LoginScreen();
+          }
+        },
+      ),
     );
   }
 }
